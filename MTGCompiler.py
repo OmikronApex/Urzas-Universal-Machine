@@ -69,37 +69,6 @@ class MTGCompiler:
             }
         }
 
-    def create_program_scenario(
-        self,
-        *,
-        name: str,
-        assembler_code: str,
-        initial_data: str = "",
-        start_state: str = "q1",
-        head_pos: int = 0,
-    ) -> Dict:
-        """
-        Compile TAS layout code into a full scenario dict.
-        """
-        from MTGAssembler import MTGAssembler
-        assembler = MTGAssembler()
-
-        # The assembler.assemble() now returns the FULL scenario dict
-        # { name, state, head, tape }
-        scenario = assembler.assemble(assembler_code, initial_data=initial_data)
-
-        # Apply overrides from UI if they weren't specified in the layout code
-        if name:
-            scenario["name"] = name
-
-        # Add metadata for the UI
-        scenario["meta"] = {
-            "mode": "layout",
-            "input_string": initial_data,
-        }
-
-        return scenario
-
 
 def load_scenario_data(data: Dict) -> "GameLikeMachine":
     """

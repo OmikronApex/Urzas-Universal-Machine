@@ -12,7 +12,6 @@ from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
-from MTGAssembler import MTGAssembler
 from MTGCompiler import MTGCompiler, FULL_UTM_ALPHABET, load_scenario_data
 from MTGSimulator import GameLikeMachine, load_scenario
 from UniversalTuringMachineTransitions import UTM
@@ -179,43 +178,20 @@ app.mount("/static", StaticFiles(directory=WEB_DIR), name="static")
 
 _session = _Session()
 _compiler = MTGCompiler(FULL_UTM_ALPHABET)
-_assembler = MTGAssembler()
-
-@app.post("/api/step_logical")
-async def step_logical_endpoint():
-    try:
-        frames = _session.step_logical()
-        # Only send the last frame to the UI to 'skip' the fetch cycles
-        if frames:
-            return frames[-1]
-        return {"type": "error", "message": "No logical step occurred"}
-    except Exception as e:
-        return {"type": "error", "message": str(e)}
 
 @app.post("/api/compile")
 async def compile_and_assemble(data: dict) -> dict:
     try:
         input_data = data.get("input", "").strip()
-        assembler_code = data.get("assembler", "").strip()
 
-        compiler = MTGCompiler()
+        scenario = _compiler.create_scenario(
+            name="UI compile",
+            input_data=input_data,
+            start_state="q1",
+            head_pos=0,
+        )
 
-        if assembler_code:
-            # New Layout-based assembly
-            scenario = compiler.create_program_scenario(
-                name="UI compile",
-                assembler_code=assembler_code,
-                initial_data=input_data
-            )
-        else:
-            scenario = compiler.create_scenario(
-                name="UI compile",
-                input_data=input_data,
-                start_state="q1",
-                head_pos=0,
-            )
-
-        # FIX: Update the _session object instead of a global machine variable
+        # Update the _session object
         _session.machine = load_scenario_data(scenario)
         _session.frame_iter = None
 

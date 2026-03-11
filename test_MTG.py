@@ -1,46 +1,6 @@
 # Python 3.10.6
 import unittest
-from MTGAssembler import MTGAssembler
 
-class TestTapePatternAssembler(unittest.TestCase):
-    def setUp(self):
-        self.asm = MTGAssembler()
-
-    def test_basic_offset_and_symbols(self):
-        code = """
-        OFFSET 0: 0 1 _
-        OFFSET 10: X
-        """
-        # 0=Sliver, 1=Aetherborn, _=Cephalid, X=Rhino
-        result = self.asm.assemble(code)
-        tape = result["tape"]
-        
-        self.assertEqual(tape["0"], "Sliver")
-        self.assertEqual(tape["1"], "Aetherborn")
-        # Position 2 is Cephalid (BLANK), so it should be omitted from sparse dict
-        self.assertNotIn("2", tape)
-        self.assertEqual(tape["10"], "Rhino")
-
-    def test_metadata_parsing(self):
-        code = """
-        HEAD: 5
-        STATE: q2
-        OFFSET 0: 1 1
-        """
-        result = self.asm.assemble(code)
-        self.assertEqual(result["head"], 5)
-        self.assertEqual(result["state"], "q2")
-        self.assertEqual(result["tape"]["0"], "Aetherborn")
-
-    def test_initial_data_integration(self):
-        # Initial data "01" puts Sliver at 0, Aetherborn at 1.
-        # Layout "OFFSET 1: X" should overwrite position 1.
-        code = "OFFSET 1: X"
-        result = self.asm.assemble(code, initial_data="01")
-        tape = result["tape"]
-        
-        self.assertEqual(tape["0"], "Sliver")
-        self.assertEqual(tape["1"], "Rhino")
 
 if __name__ == "__main__":
     unittest.main()
@@ -124,7 +84,7 @@ class TestAllTransitionsTableDriven(unittest.TestCase):
         # The halt frame should have state transition info
         self.assertIsNotNone(halt_frame.state_from)
         self.assertIsNotNone(halt_frame.state_to)
-        
+
         # The write happens before halt
         write_frames = [f for f in frames if f.written_type == "Assassin"]
         self.assertTrue(write_frames, "Expected Assassin to be written before halt")
@@ -146,13 +106,13 @@ class TestAllTransitionsTableDriven(unittest.TestCase):
 
                 # Baseline choreography - all transitions should have these
                 self.assertIn("END STEP", phases, f"Missing END STEP for {state}, {read_type}")
-                
+
                 # Check that we have untap, upkeep, cast, and resolve phases
                 has_untap = any("UNTAP" in p for p in phases)
                 has_upkeep = any("UPKEEP" in p for p in phases)
                 has_cast = any("CAST" in p for p in phases)
                 has_resolve = any("RESOLVE" in p for p in phases)
-                
+
                 self.assertTrue(has_untap, f"Missing UNTAP phase for {state}, {read_type}")
                 self.assertTrue(has_upkeep, f"Missing UPKEEP phase for {state}, {read_type}")
                 self.assertTrue(has_cast, f"Missing CAST phase for {state}, {read_type}")

@@ -483,7 +483,6 @@ def save_scenario(m: GameLikeMachine, file_path: str, *, name: str = "", descrip
 
 if __name__ == "__main__":
     import sys
-    from MTGBoardViewModel import run_interactive
 
     if len(sys.argv) > 1:
         scenario_path = sys.argv[1]
@@ -491,5 +490,17 @@ if __name__ == "__main__":
         machine = load_scenario(scenario_path)
     else:
         machine = GameLikeMachine()
+        # Simple CLI runner - run one step and print results
+    print(f"Initial state: {machine.state}, head: {machine.head}, halted: {machine.halted}")
+    print("Running one step...")
 
-    run_interactive(machine)
+    try:
+        for frame in machine.frames_for_next_step():
+            print(f"  [{frame.phase}] {', '.join(frame.narration)}")
+            if frame.phase == "END STEP":
+                break
+    except Exception as e:
+        print(f"Error: {e}")
+
+    print(f"Final state: {machine.state}, head: {machine.head}, halted: {machine.halted}")
+    print("\nFor interactive visualization, run: python web_server.py")

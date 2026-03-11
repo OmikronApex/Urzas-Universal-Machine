@@ -16,10 +16,10 @@ The simulator mimics the specific card interactions required to perform computat
 
 - `MTGSimulator.py`: The core engine that runs the game logic and produces step-by-step "frames".
 - `UniversalTuringMachineTransitions.py`: Contains the (2,18) UTM transition table mapped to MTG creature types.
-- `web_server.py`: A Flask-based server to host the interactive visualization.
+- `MTGCompiler.py`: Compiles high-level symbol strings (e.g., "0101X") into scenario configurations.
+- `web_server.py`: A FastAPI-based server to host the interactive visualization.
 - `web/`: Contains the frontend assets (HTML, CSS, JS) and card images.
 - `scenarios/`: JSON files defining initial tape configurations and states.
-- `MTGCompiler.py` & `MTGAssembler.py`: Tools for preparing machine configurations.
 
 ## Getting Started
 
@@ -38,7 +38,7 @@ The simulator mimics the specific card interactions required to perform computat
    ```
 3. Install dependencies:
    ```bash
-   pip install flask
+   pip install fastapi uvicorn pyyaml
    ```
 
 ### Running the Simulator
@@ -48,7 +48,7 @@ To launch the web interface:
    ```bash
    python web_server.py
    ```
-2. Open your browser and navigate to `http://127.0.0.1:5000`.
+2. Open your browser and navigate to `http://127.0.0.1:60720`.
 3. Select a scenario from the dropdown (e.g., `short_run.json`) and use the **Step** or **Autoplay** buttons to watch the computation unfold.
 
 ## Scenarios
