@@ -1,0 +1,27 @@
+{
+  "name": "Multi-symbol tape",
+  "description": "A tape with several different creature types to exercise multiple transitions.",
+  "state": "q1",
+  "head": 2,
+  "tape": {
+    "0": "Rhino",
+    "1": "Basilisk",
+    "2": "Demon",
+    "3": "Faerie",
+    "4": "Pegasus"
+  },
+  "expected": {
+    "after_steps": 3,
+    "state": "q2",
+    "head": 5,
+    "halted": false,
+    "winner": null,
+    "tape": {
+      "0": "Elf",
+      "1": "Basilisk",
+      "2": "Aetherborn",
+      "3": "Harpy",
+      "4": "Rhino"
+    }
+  }
+}

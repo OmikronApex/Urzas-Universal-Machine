@@ -1,0 +1,861 @@
+:root {
+    --bg: #0b0f14;
+    --panel: rgba(255, 255, 255, 0.06);
+    --panel2: rgba(255, 255, 255, 0.09);
+    --text: #e7eef7;
+    --muted: rgba(231, 238, 247, 0.7);
+
+    --gold: #e0c15a;
+    --danger: #ff5964;
+
+    --w: #f5f1dd; /* white */
+    --g: #57d38a; /* green */
+    --u: #5aa5ff; /* blue */
+}
+
+* {
+    box-sizing: border-box;
+}
+
+html, body {
+    height: 100%;
+    margin: 0;
+    overflow: hidden;
+}
+
+body {
+    font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+    background: radial-gradient(1200px 600px at 50% 30%, #132034 0%, var(--bg) 60%);
+    color: var(--text);
+}
+
+#app {
+    height: 100%;
+    display: grid;
+    grid-template-rows: auto 1fr auto;
+}
+
+.playmat {
+    display: grid;
+    grid-template-columns: 200px 1fr 300px;
+    grid-template-rows: 1fr;
+    gap: 10px;
+    padding: 10px;
+    overflow: hidden;
+}
+
+.zone.compiler {
+    grid-column: 1 / 3;
+    grid-row: 1;
+}
+
+.zone.legend {
+    grid-column: 3;
+    grid-row: 1;
+}
+
+.sidebar-left {
+    grid-column: 1;
+    grid-row: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    overflow-y: auto;
+    padding: 10px;
+    align-items: center;
+    background: rgba(0, 0, 0, 0.2); /* Subtle separation */
+}
+
+.sidebar-left .zone {
+    width: 100%;
+    flex: 0 0 auto; /* Allow zones to define their own height based on children */
+    display: flex;
+    flex-direction: column;
+    margin-bottom: 20px;
+}
+
+#graveyardList.pile {
+    min-height: 280px; /* Adjusted for shorter card height */
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    padding: 0;
+}
+
+#stackPile.pile {
+    min-height: 260px; /* Adjusted for shorter card height */
+    padding: 0;
+}
+
+.zone-title {
+    font-size: 12px;
+    font-weight: bold;
+    color: var(--gold);
+    letter-spacing: 1px;
+    margin-bottom: 10px;
+    padding-bottom: 5px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    flex: 0 0 auto;
+}
+
+.zone.battlefield {
+    grid-column: 2;
+    grid-row: 1;
+    display: flex;
+    flex-direction: column;
+    align-self: flex-start; /* FIX: Anchor to top so it doesn't shift */
+    padding: 10px; /* FIX: Added 10px padding to match sidebar */
+}
+
+.battlefield-row {
+    margin-top: 30px; /* Slightly more room for safety */
+    display: flex;
+    gap: 40px;
+    align-items: center;
+    justify-content: center;
+    flex: 1;
+    overflow-x: auto;
+    padding: 40px 0;
+    min-height: 220px;
+    width: 100%; /* Ensure it spans the container */
+}
+
+#aliceBattlefieldRow {
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+    background: rgba(255, 255, 255, 0.02);
+}
+
+#aliceBattlefieldRow .card {
+    transform: scale(0.8);
+    transform-origin: top center;
+    transition: transform 0.2s, margin 0.2s, z-index 0s;
+}
+
+/* Maintain consistent sizes for all battlefield cards */
+.zone.battlefield .card,
+#bobPermanentsRow .card,
+#aliceBattlefieldRow .card {
+    width: 150px;
+    height: 210px;
+    transform: scale(0.8); /* Visual scaling */
+    transform-origin: center center; /* Consistent scaling from the center */
+    transition: transform 0.2s, box-shadow 0.2s; /* Smooth zoom hover effect */
+}
+
+/* Correct hover zoom on all battlefield cards */
+.zone.battlefield .card:hover,
+#bobPermanentsRow .card:hover,
+#aliceBattlefieldRow .card:hover {
+    transform: scale(1.05) translateY(-10px) !important;
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.8); /* Highlight effect */
+}
+
+/* Ensure no interference on overlapping hitboxes */
+.card.no-hover:hover {
+    transform: none !important;
+    z-index: initial !important;
+    box-shadow: none !important; /* Disable hover effects for no-hover class */
+}
+
+.stack-pile-visual {
+    margin-top: 60px; /* Space for tucked headers within the fixed zone */
+    position: relative;
+    width: 150px; /* Increased for larger cards */
+    z-index: -1;
+    border-bottom: none;
+}
+
+.stack-item {
+    transition: transform 0.2s;
+    border: 5px solid #1a1714 !important; /* Consistent border width */
+    overflow: hidden;
+}
+
+.stack-item:hover {
+    transform: translateY(-10px);
+    z-index: 100 !important;
+}
+
+/* --- Battlefield --- */
+
+.zone.log {
+    grid-column: 3;
+    grid-row: 1;
+    display: flex;
+    flex-direction: column;
+    padding: 10px; /* FIX: Added 10px padding to match sidebar */
+}
+
+/* Adjust Graveyard and Stack for sidebar fit */
+.graveyard-stack {
+    position: relative;
+    height: 230px; /* Adjusted for 210px card height */
+    width: 150px;
+    margin: 10px auto;
+    transform: scale(0.8); /* Slight scale to fit the 200px sidebar */
+}
+
+.zone.stack .pile {
+    display: flex;
+    flex-direction: column;
+    gap: -40px; /* Overlap adjusted for 210px height */
+    padding-top: 20px;
+}
+
+.zone.stack .card {
+    margin-bottom: -160px; /* Adjusted overlap for 210px height */
+    transform: scale(0.8);
+    transform-origin: top center;
+    transition: margin 0.2s;
+}
+
+.zone.stack .card:hover {
+    margin-bottom: 0; /* Peek at card on hover */
+    z-index: 100;
+}
+
+/* --- HUD / Header --- */
+
+.hud {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 12px 14px;
+    background: linear-gradient(to bottom, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.02));
+    border-bottom: 1px solid rgba(255, 255, 255, 0.10);
+    z-index: 10;
+}
+
+.brand {
+    font-weight: 800;
+    letter-spacing: 0.5px;
+    color: rgba(255, 255, 255, 0.92);
+}
+
+.hud-stats {
+    margin-top: 6px;
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.pill {
+    padding: 6px 12px;
+    border-radius: 6px; /* Match button corner radius */
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid var(--gold); /* Gold border like the compile button */
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--gold);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    box-shadow: inset 0 0 5px rgba(224, 193, 90, 0.1);
+}
+
+.hud-right {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+}
+
+button, select, input[type="range"], textarea {
+    background: rgba(0, 0, 0, 0.4);
+    border-color: var(--gold);
+    color: var(--gold);
+    padding: 7px 12px;
+    border-radius: 6px;
+    font-family: inherit;
+    transition: all 0.2s ease;
+    font-weight: bold;
+    box-shadow: 0 0 10px rgba(224, 193, 90, 0.2);
+}
+
+button {
+    cursor: pointer;
+    text-transform: uppercase;
+    font-size: 11px;
+    font-weight: bold;
+    letter-spacing: 0.5px;
+}
+
+button:hover {
+    box-shadow: 0 0 15px rgba(224, 193, 90, 0.4);
+    background: var(--gold);
+    color: #000;
+}
+
+/* Compile button remains the most prominent */
+button#btnCompile {
+    border-color: var(--gold);
+    color: var(--gold);
+    font-weight: bold;
+    box-shadow: 0 0 10px rgba(224, 193, 90, 0.2);
+}
+
+button#btnCompile:hover {
+    box-shadow: 0 0 15px rgba(224, 193, 90, 0.4);
+    background: var(--gold);
+    color: #000;
+}
+
+.inline {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 11px;
+    color: var(--muted);
+}
+
+/* --- Playmat / Main Grid --- */
+
+.compiler-box {
+    margin-top: 22px;
+    display: flex;
+    gap: 16px;
+    height: calc(100% - 30px);
+}
+
+.assembler-editor {
+    flex: 2;
+    display: flex;
+}
+
+#assemblerInput {
+    flex: 1;
+    background: rgba(0, 0, 0, 0.4);
+    border: 1px solid rgba(224, 193, 90, 0.2);
+    color: #8fbdfa; /* A cooler color for logic */
+    padding: 10px;
+    font-family: 'Fira Code', ui-monospace, monospace;
+    font-size: 13px;
+    border-radius: 8px;
+    resize: none;
+    box-shadow: none;
+}
+
+.compiler-box-vertical {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+#compileInput {
+    flex: 1;
+    background: rgba(0, 0, 0, 0.25);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: var(--gold);
+    padding: 10px;
+    font-family: ui-monospace, monospace;
+    font-size: 14px;
+    border-radius: 8px;
+    resize: none;
+    box-shadow: none;
+}
+
+.compiler-controls {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    width: 280px; /* Wider for alphabet list */
+}
+
+.hint {
+    font-size: 9px; /* Slightly smaller for density */
+    color: var(--muted);
+    font-style: normal;
+    line-height: 1.4;
+    background: rgba(0, 0, 0, 0.2);
+    padding: 8px;
+    border-radius: 6px;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.hint b {
+    color: var(--gold);
+    text-transform: uppercase;
+    font-size: 10px;
+}
+
+/* --- Battlefield --- */
+
+.card-stack {
+    position: relative;
+    width: 150px;
+    height: 210px; /* Adjusted from 240px to match MTG ratio */
+    margin-top: 30px; /* Space for the header poking out */
+    flex: 0 0 auto;
+    transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    transform-origin: center center;
+    /* Allow hover effects to bleed out of the stack */
+    overflow: visible; 
+}
+
+.card-stack.tapped {
+    transform: rotate(90deg);
+}
+
+/* Fix hover interaction for attached cards (like Illusory Gains) */
+.card.attached {
+    position: absolute;
+    top: -30px; /* Correct alignment with the main card */
+    left: 0;
+    z-index: 0;
+    width: 150px; /* Match card dimensions */
+    height: 210px; /* Match card dimensions */
+    border-radius: 8px;
+    pointer-events: auto; /* Allow pointer interactions */
+    transition: transform 0.2s, box-shadow 0.2s, z-index 0s;
+}
+
+.card.attached:hover {
+    transform: translateY(-40px) scale(1.05) !important;
+    z-index: 2000 !important; /* Higher than any other stack element */
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 1);
+}
+
+.card {
+    width: 150px;
+    height: 210px; /* Adjusted from 240px to match MTG ratio */
+    border-radius: 8px;
+    background: #17191d; /* Fallback */
+    border: 5px solid #1a1714;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
+    position: relative;
+    flex: 0 0 auto;
+    display: flex;
+    flex-direction: column;
+    padding: 4px;
+    gap: 2px;
+    transition: transform 0.2s, box-shadow 0.2s, margin 0.2s;
+    z-index: 1; /* Ensure main card is above the attachment */
+}
+
+/* Remove the generic .card:hover rule to prevent conflicts with specific zone rules */
+
+/* Topmost stack cards logic: disable hover for obscured cards */
+.card.no-hover:hover {
+    transform: none !important;
+    z-index: initial !important;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5) !important;
+}
+
+/* Attachments need to pop above the main card they are attached to */
+.card.attached:hover {
+    transform: translateY(-40px) scale(1.05) !important;
+    z-index: 1001 !important;
+    pointer-events: auto; /* Solidify hitbox on zoom */
+}
+
+.card.tapped {
+    transform: rotate(90deg);
+}
+
+.card.phased-out {
+    opacity: 0.3;
+    filter: grayscale(0.5) blur(1px);
+    transition: opacity 0.5s ease, filter 0.5s ease;
+}
+
+.card-frame {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
+    padding: 4px;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0%, rgba(0, 0, 0, 0.2) 100%);
+    overflow: hidden;
+}
+
+.card .name-line {
+    background: rgba(255, 255, 255, 0.15);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 3px;
+    padding: 2px 4px;
+    font-weight: bold;
+    font-size: 10px;
+    display: block; /* Changed from flex to allow full width text flow */
+    white-space: nowrap; /* Prevent wrapping to second line */
+    overflow: hidden; /* Hide overflow if name is still too long */
+    text-overflow: ellipsis; /* Add ... if text is cut off */
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2);
+}
+
+.card .art-box {
+    height: 88px;
+    margin: 2px 0;
+    border: 1px solid #000;
+    border-radius: 0 !important; /* FIX: Sharp corners for art */
+    background: #2a2d33;
+    background-size: cover;
+    background-position: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    overflow: hidden;
+}
+
+.card .type-line {
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 2px;
+    padding: 1px 4px;
+    font-size: 8px;
+    font-style: italic;
+    margin-bottom: 2px;
+}
+
+.card .text-box {
+    flex: 1;
+    background: rgba(255, 255, 255, 0.07);
+    border: 1px solid rgba(0, 0, 0, 0.3);
+    padding: 4px 6px;
+    font-size: 10px; /* Slightly larger for readability */
+    line-height: 1.2;
+    color: #eee;
+    overflow-y: auto; /* Allow scroll if content is long */
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.card .pt-box {
+    align-self: flex-end;
+    background: rgba(255, 255, 255, 0.15);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    padding: 1px 4px;
+    border-radius: 3px;
+    font-weight: bold;
+    font-size: 9px;
+    margin-top: -8px;
+    z-index: 2;
+}
+
+.card.color-white {
+    background: #dcdad0;
+    color: #222;
+}
+
+.card.color-white .card-frame {
+    border-color: #2e4d2e;
+}
+
+.card.color-white .text-box {
+    color: #222;
+    background: rgba(255, 255, 255, 0.3);
+}
+
+.card.color-green {
+    background: #6b8e6b;
+    color: #fff;
+}
+
+.card.color-green .card-frame {
+    border-color: #2e4d2e;
+}
+
+.card.color-blue {
+    background: #6b8fb3;
+    color: #fff;
+}
+
+.card.color-blue .card-frame {
+    border-color: #2e4d2e;
+}
+
+.card.color-black {
+    background: #3a3633;
+    color: #eee;
+}
+
+.card.color-black .card-frame {
+    border-color: #2e4d2e;
+}
+
+.card.color-black .name-line {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.card.color-red {
+    background: #b14538;
+    color: #fff;
+}
+
+.card.color-red .card-frame {
+    border-color: #2e4d2e;
+}
+
+.card.color-gold {
+    background: #c5a545;
+    color: #222;
+}
+
+.card.color-gold .card-frame {
+    border-color: #2e4d2e;
+}
+
+.card.color-gold .text-box {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+.card.color-green-white {
+    background: linear-gradient(90deg, #6b8e6b 0%, #dcdad0 100%);
+}
+
+.card.color-green-white .card-frame {
+    border-color: #2e4d2e;
+}
+
+.card.color-black-green-white {
+    background: linear-gradient(90deg, #6b8e6b 0%, #3a3633 25%, #3a3633 50%, #dcdad0 100%);
+}
+
+.card.color-black-green-white .card-frame {
+    border-color: #2e4d2e;
+}
+
+.card.color-colorless {
+    background: #9da5a9;
+    color: #111;
+}
+
+.card.color-colorless .card-frame {
+    border-color: #4a4e52;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.2) 0%, rgba(0, 0, 0, 0.1) 100%);
+}
+
+.card.color-colorless .text-box {
+    background: rgba(255, 255, 255, 0.25);
+    color: #111;
+}
+
+/* Remove the old card-level tapped logic */
+
+.card.head {
+        /* Use box-shadow instead of outline so it doesn't interfere with mouse hitboxes */
+        box-shadow: 0 0 0 3px var(--gold), 0 4px 10px rgba(0, 0, 0, 0.5) !important;
+        animation: headPulse 1.5s ease-in-out infinite;
+    }
+
+    @keyframes headPulse {
+        0% {
+            box-shadow: 0 0 0 3px rgba(224, 193, 90, 0.8), 0 4px 10px rgba(0, 0, 0, 0.5);
+        }
+        50% {
+            box-shadow: 0 0 0 1px rgba(224, 193, 90, 0.3), 0 4px 10px rgba(0, 0, 0, 0.5);
+        }
+        100% {
+            box-shadow: 0 0 0 3px rgba(224, 193, 90, 0.8), 0 4px 10px rgba(0, 0, 0, 0.5);
+        }
+    }
+
+.card.flash-new {
+    animation: flashNew 0.5s ease-out;
+}
+
+@keyframes flashNew {
+    0% {
+        filter: brightness(3);
+        transform: scale(1.1);
+    }
+    100% {
+        filter: brightness(1);
+        transform: scale(1);
+    }
+}
+
+.card.flash-died {
+    animation: flashDied 0.5s ease-out;
+}
+
+@keyframes flashDied {
+    0% {
+        filter: brightness(2) saturate(2);
+        background: var(--danger);
+    }
+    100% {
+        filter: brightness(1);
+    }
+}
+
+/* --- Lists (Stack & Graveyard) --- */
+
+.pile {
+    margin-top: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    overflow-y: auto;
+    flex: 1;
+    padding: 10px;
+}
+
+.graveyard-stack {
+    position: relative;
+    height: 240px; /* Adjusted for 210px card + stack offsets */
+    width: 150px;
+    margin: 20px auto;
+}
+
+.graveyard-item {
+    position: absolute !important;
+    transform-origin: center center;
+    box-shadow: -2px 2px 10px rgba(0, 0, 0, 0.6) !important;
+    transition: transform 0.2s;
+    border: 5px solid #1a1714 !important; /* Consistent border width */
+    overflow: hidden; /* Ensure content is clipped if tucked */
+}
+
+.graveyard-item.head {
+    outline: none !important;
+}
+
+.stack-item {
+    transition: transform 0.2s;
+    border: 5px solid #1a1714 !important; /* Consistent border width */
+    overflow: hidden;
+}
+
+/* Remove the glow/highlight from graveyard items */
+.graveyard-item.head,
+.graveyard-item.color-white,
+.graveyard-item.color-green,
+.graveyard-item.color-blue {
+    box-shadow: -2px 2px 10px rgba(0, 0, 0, 0.6) !important;
+    outline: none !important;
+}
+
+.graveyard-item .card-frame {
+    background: inherit !important; /* Restore color from parent card */
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+}
+
+/* Remove the old scale(0.7) and let them be full size */
+
+.pile div {
+    font-size: 11px;
+    padding: 5px 5px;
+    border-radius: 6px;
+}
+
+/* --- Narration Log --- */
+
+.log-lines {
+    margin-top: 18px;
+    flex: 1;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    font-family: ui-monospace, monospace;
+    font-size: 12px;
+    color: var(--muted);
+    padding-right: 10px;
+}
+
+.log-lines div {
+    padding: 2px 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+}
+
+/* --- Legend --- */
+
+.legend-list {
+    margin-top: 18px;
+    flex: 1;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding-right: 10px;
+}
+
+.legend-item {
+    font-size: 11px;
+    background: rgba(255, 255, 255, 0.03);
+    padding: 6px;
+    border-radius: 4px;
+    border-left: 2px solid var(--muted);
+    display: flex;
+    flex-direction: column;
+}
+
+.legend-item.active {
+    background: rgba(224, 193, 90, 0.05);
+    border-left-color: var(--gold);
+}
+
+.legend-item b {
+    color: var(--gold);
+    font-size: 12px;
+}
+
+.legend-desc {
+    color: var(--muted);
+    font-family: ui-monospace, monospace;
+    margin-top: 2px;
+}
+
+/* --- Status Bar --- */
+
+.statusbar {
+    padding: 8px 14px;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    background: rgba(0, 0, 0, 0.3);
+    font-size: 11px;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.statusbar .spacer {
+    flex: 1;
+}
+
+#connStatus {
+    font-weight: bold;
+}
+
+/* --- Hand --- */
+.hand-zone {
+    position: fixed;
+    bottom: -120px; /* Adjusted to hide a bit more of the 210px height */
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 10px; /* Use positive gap for better visibility initially */
+    padding: 20px;
+    z-index: 1000; /* Higher than footer/statusbar */
+    transition: bottom 0.3s ease;
+    pointer-events: none;
+    min-height: 250px;
+    width: auto;
+    min-width: 300px;
+    justify-content: center;
+}
+
+.hand-zone:hover {
+    bottom: -20px;
+}
+
+.hand-zone .card {
+    transition: transform 0.2s, margin-top 0.2s;
+    cursor: pointer;
+    box-shadow: 0 -5px 15px rgba(0, 0, 0, 0.5);
+    pointer-events: auto; /* Re-enable for the actual cards */
+}
+
+.hand-zone .card:hover {
+    transform: translateY(-40px) scale(1.05);
+    z-index: 1100 !important;
+}
+
+/* Ensure Stack items also have sharp art corners and consistent borders */
+.stack-item {
+    transition: transform 0.2s;
+    border: 5px solid #1a1714 !important;
+}

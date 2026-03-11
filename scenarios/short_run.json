@@ -1,0 +1,21 @@
+{
+  "name": "Short run (blank tape)",
+  "description": "Start on blank tape in q1. Runs several steps without halting.",
+  "state": "q1",
+  "head": 0,
+  "tape": {},
+  "expected": {
+    "after_steps": 5,
+    "state": "q1",
+    "head": -5,
+    "halted": false,
+    "winner": null,
+    "tape": {
+      "0": "Sliver",
+      "-1": "Sliver",
+      "-2": "Sliver",
+      "-3": "Sliver",
+      "-4": "Sliver"
+    }
+  }
+}

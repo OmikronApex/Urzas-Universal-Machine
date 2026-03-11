@@ -1,0 +1,19 @@
+{
+  "name": "Immediate halt",
+  "description": "Rhino at head in q1 -> blue Assassin -> HALT on first step.",
+  "state": "q1",
+  "head": 0,
+  "tape": {
+    "0": "Rhino"
+  },
+  "expected": {
+    "after_steps": 1,
+    "state": "q1",
+    "head": 0,
+    "halted": true,
+    "winner": "Alice",
+    "tape": {
+      "0": "Assassin"
+    }
+  }
+}
