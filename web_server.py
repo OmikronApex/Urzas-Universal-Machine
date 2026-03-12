@@ -12,7 +12,6 @@ from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
-from MTGCompiler import MTGCompiler, FULL_UTM_ALPHABET, load_scenario_data
 from MTGSimulator import GameLikeMachine, load_scenario
 from UniversalTuringMachineTransitions import UTM
 
@@ -177,28 +176,6 @@ app = FastAPI(title="MTG Turing Machine - Web UI (local)")
 app.mount("/static", StaticFiles(directory=WEB_DIR), name="static")
 
 _session = _Session()
-_compiler = MTGCompiler(FULL_UTM_ALPHABET)
-
-@app.post("/api/compile")
-async def compile_and_assemble(data: dict) -> dict:
-    try:
-        input_data = data.get("input", "").strip()
-
-        scenario = _compiler.create_scenario(
-            name="UI compile",
-            input_data=input_data,
-            start_state="q1",
-            head_pos=0,
-        )
-
-        # Update the _session object
-        _session.machine = load_scenario_data(scenario)
-        _session.frame_iter = None
-
-        return {"status": "ok", "snapshot": _snapshot_machine(_session.machine)}
-
-    except Exception as e:
-        return {"status": "error", "message": str(e)}
 
 
 @app.get("/")

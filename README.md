@@ -16,7 +16,6 @@ The simulator mimics the specific card interactions required to perform computat
 
 - `MTGSimulator.py`: The core engine that runs the game logic and produces step-by-step "frames".
 - `UniversalTuringMachineTransitions.py`: Contains the (2,18) UTM transition table mapped to MTG creature types.
-- `MTGCompiler.py`: Compiles high-level symbol strings (e.g., "0101X") into scenario configurations.
 - `web_server.py`: A FastAPI-based server to host the interactive visualization.
 - `web/`: Contains the frontend assets (HTML, CSS, JS) and card images.
 - `scenarios/`: JSON files defining initial tape configurations and states.
