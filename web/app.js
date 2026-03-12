@@ -389,32 +389,27 @@ function render(snapshot, frame, graveyardData = [], stackData = []) {
                     cardEl.classList.add("phased-out");
                 }
 
-                if (i > 0) {
-                    cardEl.style.position = "absolute";
-                    cardEl.style.top = `${i * 4}px`;
-                    cardEl.style.left = `${i * 2}px`;
-                    cardEl.style.zIndex = i * 2; // Leave room for attachments
-                }
+                    if (i > 0) {
+                        cardEl.style.position = "absolute";
+                        cardEl.style.top = `${i * 4}px`;
+                        cardEl.style.left = `${i * 2}px`;
+                        cardEl.style.zIndex = i * 2; // Leave room for attachments
+                    }
 
-                // Disable hover for everything except the topmost card in the stack
-                if (!isTop) {
-                    cardEl.classList.add("no-hover");
-                }
+                    stackContainer.appendChild(cardEl);
 
-                stackContainer.appendChild(cardEl);
-
-                // Add Cloak of Invisibility ONLY to the bottom-most card in the stack
+                    // Add Cloak of Invisibility ONLY to the bottom-most card in the stack
                 if (isBottom && (config.name.includes("Rotlung") || config.name.includes("Xathrid"))) {
                     const cloakEl = tokenCard({
                         pos: "Engine",
-                        tok: {creature_type: "Cloak of Invisibility", color: "blue"},
+                        tok: {creature_type: "Cloak of Invisibility", color: "blue", tapped: false},
                         isHead: false,
                         blankSymbol: "Cephalid",
                         gainsAttached: false,
                         isAttachment: true
                     });
 
-                    cloakEl.style.zIndex = 0; // Place behind the bottom card
+                    cloakEl.style.zIndex = 0; // <--- This sets the attachment's zIndex
                     cloakEl.style.pointerEvents = "auto";
                     stackContainer.appendChild(cloakEl);
                 }

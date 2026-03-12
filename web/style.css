@@ -148,22 +148,9 @@ body {
 #aliceBattlefieldRow .card:hover {
     transform: scale(1.05) translateY(-10px) !important;
     box-shadow: 0 10px 20px rgba(0, 0, 0, 0.8); /* Highlight effect */
+    z-index: 1000;
 }
 
-/* Ensure no interference on overlapping hitboxes */
-.card.no-hover:hover {
-    transform: none !important;
-    z-index: initial !important;
-    box-shadow: none !important; /* Disable hover effects for no-hover class */
-}
-
-.stack-pile-visual {
-    margin-top: 60px; /* Space for tucked headers within the fixed zone */
-    position: relative;
-    width: 150px; /* Increased for larger cards */
-    z-index: -1;
-    border-bottom: none;
-}
 
 .stack-item {
     transition: transform 0.2s;
@@ -171,10 +158,6 @@ body {
     overflow: hidden;
 }
 
-.stack-item:hover {
-    transform: translateY(-10px);
-    z-index: 100 !important;
-}
 
 /* --- Battlefield --- */
 
@@ -410,7 +393,8 @@ button#btnCompile:hover {
     transition: transform 0.2s, box-shadow 0.2s, z-index 0s;
 }
 
-.card.attached:hover {
+/* Only allow hover pop-up for attachments in the main battlefield, not Bob's engine row */
+.zone.battlefield .card.attached:hover {
     transform: translateY(-40px) scale(1.05) !important;
     z-index: 2000 !important; /* Higher than any other stack element */
     box-shadow: 0 10px 30px rgba(0, 0, 0, 1);
@@ -433,21 +417,7 @@ button#btnCompile:hover {
     z-index: 1; /* Ensure main card is above the attachment */
 }
 
-/* Remove the generic .card:hover rule to prevent conflicts with specific zone rules */
 
-/* Topmost stack cards logic: disable hover for obscured cards */
-.card.no-hover:hover {
-    transform: none !important;
-    z-index: initial !important;
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5) !important;
-}
-
-/* Attachments need to pop above the main card they are attached to */
-.card.attached:hover {
-    transform: translateY(-40px) scale(1.05) !important;
-    z-index: 1001 !important;
-    pointer-events: auto; /* Solidify hitbox on zoom */
-}
 
 .card.tapped {
     transform: rotate(90deg);
@@ -457,6 +427,12 @@ button#btnCompile:hover {
     opacity: 0.3;
     filter: grayscale(0.5) blur(1px);
     transition: opacity 0.5s ease, filter 0.5s ease;
+}
+
+.card.phased-out:hover {
+    opacity: 1;
+    filter: grayscale(0.5);
+    z-index: 100;
 }
 
 .card-frame {
