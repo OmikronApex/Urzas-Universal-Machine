@@ -417,8 +417,6 @@ button#btnCompile:hover {
     z-index: 1; /* Ensure main card is above the attachment */
 }
 
-
-
 .card.tapped {
     transform: rotate(90deg);
 }
