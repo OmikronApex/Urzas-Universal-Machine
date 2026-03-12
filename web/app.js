@@ -119,12 +119,13 @@ function tokenCard({pos, tok, isHead, blankSymbol, gainsAttached, flashClass, is
         nameLower.includes("ancient tomb")) {
         color = "gold";
     } else if (nameLower.includes("wheel of sun and moon") ||
-        nameLower.includes("blazing archon") ||
         nameLower.includes("privileged position")) {
         color = "green/white";
     } else if (nameLower.includes("rotlung reanimator") ||
         nameLower.includes("xathrid necromancer")) {
         color = "black/green/white";
+    } else if (nameLower.includes("blazing archon")) {
+        color = "white/black/red/green";
     } else if (nameLower.includes("mesmeric orb")) {
         color = "colorless";
     }
@@ -140,6 +141,7 @@ function tokenCard({pos, tok, isHead, blankSymbol, gainsAttached, flashClass, is
     if (color === "gold") el.classList.add("color-gold");
     if (color === "green/white") el.classList.add("color-green-white");
     if (color === "black/green/white") el.classList.add("color-black-green-white");
+    if (color === "white/black/red/green") el.classList.add("color-white-black-red-green");
     if (color === "colorless") el.classList.add("color-colorless");
 
     // ONLY highlight the main creature, never the attachment
@@ -682,6 +684,7 @@ function connect() {
 btnReset.addEventListener("click", () => {
     // Local graveyardCards variable is gone, server handles reset
     send({type: "reset"});
+    logLines.innerHTML = "";
 });
 btnFrame.addEventListener("click", () => send({type: "step_frame"}));
 btnStep.addEventListener("click", () => send({type: "step_step"}));

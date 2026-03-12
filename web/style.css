@@ -618,6 +618,14 @@ button#btnCompile:hover {
     border-color: #2e4d2e;
 }
 
+.card.color-white-black-red-green {
+    background: linear-gradient(90deg, #dcdad0 0%, #3a3633 25%, #b14538 50%, #6b8e6b 100%);
+}
+
+.card.color-white-black-red-green .card-frame {
+    border-color: #2e4d2e;
+}
+
 .card.color-colorless {
     background: #9da5a9;
     color: #111;
