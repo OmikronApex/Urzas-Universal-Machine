@@ -664,49 +664,29 @@ button#btnCompile:hover {
 /* Remove the old card-level tapped logic */
 
 .card.head {
-    /* Use box-shadow instead of outline so it doesn't interfere with mouse hitboxes */
     box-shadow: 0 0 0 3px var(--gold), 0 4px 10px rgba(0, 0, 0, 0.5) !important;
-    animation: headPulse 1.5s ease-in-out infinite;
-}
-
-@keyframes headPulse {
-    0% {
-        box-shadow: 0 0 0 3px rgba(224, 193, 90, 0.8), 0 4px 10px rgba(0, 0, 0, 0.5);
-    }
-    50% {
-        box-shadow: 0 0 0 1px rgba(224, 193, 90, 0.3), 0 4px 10px rgba(0, 0, 0, 0.5);
-    }
-    100% {
-        box-shadow: 0 0 0 3px rgba(224, 193, 90, 0.8), 0 4px 10px rgba(0, 0, 0, 0.5);
-    }
-}
-
-.card.flash-new {
-    animation: flashNew 0.5s ease-out;
-}
-
-@keyframes flashNew {
-    0% {
-        filter: brightness(3);
-        transform: scale(1.1);
-    }
-    100% {
-        filter: brightness(1);
-        transform: scale(1);
-    }
 }
 
 .card.flash-died {
-    animation: flashDied 0.5s ease-out;
+    animation: flashDied 0.8s ease-out forwards;
+    z-index: 10;
 }
 
 @keyframes flashDied {
     0% {
-        filter: brightness(2) saturate(2);
-        background: var(--danger);
+        box-shadow: 0 0 0 0 rgba(255, 89, 100, 0.9);
+        transform: scale(var(--card-scale));
+        border-color: #ff5964;
+    }
+    40% {
+        box-shadow: 0 0 30px 15px rgba(255, 89, 100, 0.6);
+        transform: scale(calc(var(--card-scale) - 0.08));
+        border-color: #ff5964;
     }
     100% {
-        filter: brightness(1);
+        box-shadow: 0 0 0 0 rgba(255, 89, 100, 0);
+        transform: scale(var(--card-scale));
+        border-color: inherit;
     }
 }
 

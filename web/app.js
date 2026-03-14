@@ -671,9 +671,6 @@ function render(snapshot, frame, graveyardData = [], stackData = []) {
         if (tapped) stackContainer.classList.add("tapped");
 
         let flashClass = null;
-        if (writtenPos === pos) flashClass = "flash-new";
-        else if (readPos === pos) flashClass = "flash-died";
-        else if (changedPositions.has(pos)) flashClass = "flash-new";
 
         // Add pulsing classes based on global turn events detected above
         if (pulseType === "plus" && (pulseTargetColor === "all" || tok.color === pulseTargetColor)) {
