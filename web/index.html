@@ -25,10 +25,10 @@
             <button id="btnFrame">Step frame</button>
             <button id="btnStep">Step step</button>
 
-            <label class="inline">
-                <input type="checkbox" id="chkAutoplay"/>
-                Autoplay
-            </label>
+            <div class="hud-group">
+                <button id="btnPlay">Play</button>
+                <button id="btnStop" disabled>Stop</button>
+            </div>
             <label class="inline">
                 Speed
                 <input id="speed" type="range" min="0" max="100" value="100"/>
@@ -64,8 +64,10 @@
         </section>
 
         <section class="zone log">
-            <div class="zone-title">NARRATION</div>
+            <div class="zone-title" style="flex: 0 0 auto;">NARRATION</div>
             <div id="logLines" class="log-lines"></div>
+            <div class="zone-title" style="margin-top: 15px; flex: 0 0 auto;">DECK</div>
+            <div id="deckPile" class="deck-pile"></div>
         </section>
     </main>
 

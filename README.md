@@ -1,70 +1,190 @@
-# MTG Turing Machine Simulator
+# MTG-UTM
 
-An implementation and visualization of the Magic: The Gathering (MTG) Universal Turing Machine, based on the research paper "Magic: The Gathering is Turing Complete".
-
-This project simulates a game of MTG where the board state represents a Turing Machine's tape and Alice's deck/hand rotation drives the computational steps.
+A visual simulator for the Turing-complete construction from the paper ["Magic: The Gathering is Turing Complete"](https://arxiv.org/abs/1904.09828).
 
 ## Overview
 
-The simulator mimics the specific card interactions required to perform computation:
-- **Tape Cells:** Represented by creature tokens with specific types (e.g., Sliver, Elf, Rhino).
-- **Read/Write Head:** Controlled by the position of Alice's `Illusory Gains`.
-- **Instruction Execution:** Driven by Alice casting spells like `Infest` (to read/kill), `Rotlung Reanimator` (to write), and `Cleansing Beam` (to move the head).
-- **State Changes:** Handled through the `Mesmeric Orb` timing trick and phasing mechanics.
+This project implements a Universal Turing Machine using Magic: The Gathering game rules. The simulator features:
+
+- **Core engine** (`MTGSimulator.py`): Executes Turing machine steps using MTG phases and triggers
+- **Transition table** (`UniversalTuringMachineTransitions.py`): Defines the state/symbol mappings
+- **Web UI** (`web_server.py`): Interactive visualization with step-by-step execution
+- **Test suite** (`test_MTG.py`): Comprehensive unit and integration tests
+
+## Installation
+```
+bash
+# Create virtual environment (if not already created)
+python -m venv .venv
+
+# Activate virtual environment
+source .venv/bin/activate  # On Windows: .venv\Scripts\activate
+
+# Install dependencies
+pip install fastapi uvicorn pyyaml click
+```
+## Usage
+
+### Interactive Web UI
+```
+bash
+python web_server.py
+```
+Then open http://127.0.0.1:60720 in your browser.
+
+**Controls:**
+- **Step Frame**: Execute one visual frame (single phase)
+- **Step Step**: Execute one full computational step (complete turn cycle)
+- **Autoplay**: Automatically step through the simulation
+- **Radius**: Control how many tape cells are visible
+- **Scenario Selector**: Load different pre-configured machines
+
+### Command-Line Interface
+
+```bash
+# Run a scenario from the command line
+python MTGSimulator.py scenarios/short_run.json
+```
+```
+
+
+### Running Tests
+
+```shell script
+python -m unittest test_MTG.py
+```
+
 
 ## Project Structure
 
-- `MTGSimulator.py`: The core engine that runs the game logic and produces step-by-step "frames".
-- `UniversalTuringMachineTransitions.py`: Contains the (2,18) UTM transition table mapped to MTG creature types.
-- `web_server.py`: A FastAPI-based server to host the interactive visualization.
-- `web/`: Contains the frontend assets (HTML, CSS, JS) and card images.
-- `scenarios/`: JSON files defining initial tape configurations and states.
+```
+MTGTuring/
+├── MTGSimulator.py                       # Core Turing machine engine
+├── UniversalTuringMachineTransitions.py  # State transition table
+├── web_server.py                         # FastAPI web server
+├── test_MTG.py                           # Test suite
+├── scenarios/                            # Example machine configurations
+│   └── *.json
+└── web/                                  # Frontend files
+    ├── index.html
+    ├── app.js
+    ├── style.css
+    └── images/                           # Card artwork
+```
 
-## Getting Started
 
-### Prerequisites
+## How It Works
 
-- Python 3.10.6
-- `virtualenv`
+The simulator models a Turing machine where:
 
-### Installation
+1. **Tape cells** are represented by creature tokens on the battlefield
+2. **Reading** is performed by Infest (kills creatures with -2/-2)
+3. **Writing** is triggered by Rotlung Reanimator/Xathrid Necromancer (create new tokens)
+4. **Head movement** is determined by token color:
+   - White = Move left (-1)
+   - Green = Move right (+1)
+   - Blue = Halt
+5. **State changes** are encoded in tapped status and triggered by Soul Snuffers
+6. **Halting** occurs when Coalition Victory wins (Assassin token + blue color)
 
-1. Clone the repository to your local machine.
-2. Create and activate a virtual environment:
-   ```bash
-   virtualenv venv
-   source venv/bin/activate  # On Windows: venv\Scripts\activate
-   ```
-3. Install dependencies:
-   ```bash
-   pip install fastapi uvicorn pyyaml
-   ```
+### Turn Structure
 
-### Running the Simulator
+Each computational step consists of multiple game turns:
 
-To launch the web interface:
-1. Run the web server:
-   ```bash
-   python web_server.py
-   ```
-2. Open your browser and navigate to `http://127.0.0.1:60720`.
-3. Select a scenario from the dropdown (e.g., `short_run.json`) and use the **Step** or **Autoplay** buttons to watch the computation unfold.
+1. **Alice's Turn:**
+   - Untap Step (triggers Mesmeric Orb)
+   - Upkeep Step (Wild Evocation casts a spell from hand)
+   - Draw Step
+2. **Bob's Turn:** (simplified pass)
+3. Repeat until Soul Snuffers is cast (state change complete)
 
-## Scenarios
+### Spell Rotation
 
-Scenarios are defined in JSON format. Example structure:
+The machine cycles through these spells:
+- **Infest** → Read the tape
+- **Cleansing Beam** → Move the head
+- **Coalition Victory** → Check halt condition
+- **Soul Snuffers** → Update state
+
+## Scenario Format
+
+Scenarios are JSON files defining initial tape configuration:
+
 ```json
 {
-  "name": "Example",
+  "name": "Example Scenario",
+  "description": "A simple test",
   "state": "q1",
   "head": 0,
   "tape": {
     "0": "Rhino",
-    "1": "Elf"
+    "1": "Elf",
+    "-1": "Basilisk"
+  },
+  "expected": {
+    "after_steps": 5,
+    "state": "q2",
+    "head": 3,
+    "halted": false,
+    "tape": {
+      "0": "Assassin",
+      "1": "Demon"
+    }
   }
 }
 ```
 
+
+### Available Creature Types (Tape Symbols)
+
+- **Cephalid** (Blank symbol)
+- Aetherborn, Assassin, Basilisk, Demon, Elf
+- Faerie, Giant, Harpy, Illusion, Juggernaut
+- Kavu, Leviathan, Myr, Noggle, Orc
+- Pegasus, Rhino, Sliver
+
+## Development
+
+### Adding New Scenarios
+
+1. Create a new `.json` file in the `scenarios/` directory
+2. Define the initial state, head position, and tape contents
+3. Optionally add an `expected` block for automated testing
+4. The scenario will automatically appear in the web UI selector
+
+### Running in Development Mode
+
+The web server supports hot-reload:
+
+```shell script
+python web_server.py
+# Server will automatically restart on code changes
+```
+
+
+## Technical Details
+
+- **Python Version:** 3.10.6
+- **Frontend:** Vanilla JavaScript (no frameworks)
+- **Backend:** FastAPI with WebSocket support
+- **Testing:** Python unittest framework
+
 ## Credits
 
-Based on the work of Alex Churchill, Stella Biderman, and Austin Herrick in "Magic: The Gathering is Turing Complete".
+Based on the academic paper:
+> Churchill, A., Biderman, S., & Herrick, A. (2019). *Magic: The Gathering is Turing Complete*. arXiv:1904.09828
+
+## License
+
+MIT License - See LICENSE file for details
+
+## Contributing
+
+Contributions are welcome! Please feel free to submit issues or pull requests.
+
+---
+
+**Note:** This is a theoretical simulation. The construction requires specific MTG card combinations and rule interpretations that may not be tournament-legal.
+```
+You can copy this entire block and paste it into your README.md file!
+```

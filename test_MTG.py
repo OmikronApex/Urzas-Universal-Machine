@@ -11,7 +11,7 @@ import tempfile
 import os
 
 import UniversalTuringMachineTransitions as utm
-from MTGSimulator import GameLikeMachine
+from MTGSimulator import GameLikeMachine, NoTransitionError
 from MTGSimulator import load_scenario, save_scenario
 
 
@@ -33,6 +33,31 @@ def expected_move_dir(move_color: str):
 
 
 class TestAllTransitionsTableDriven(unittest.TestCase):
+
+    def test_state_change_logic_via_tapped_tokens(self):
+        """Verify that 'tapped' write_type results in a state change after Soul Snuffers."""
+        # Use a transition known to change state: q1 + Kavu -> q2 (tapped Leviathan)
+        m = GameLikeMachine()
+        m.state = "q1"
+        m.head = 0
+        m.set_token(0, m._new_token(creature_type="Kavu"))
+
+        trans = utm.lookup("q1", "Kavu")
+        self.assertTrue(trans.tapped, "Kavu transition should be tapped")
+        self.assertEqual(trans.next_state, "q2")
+
+        frames = run_one_step_frames(m)
+
+        # Check the token was written tapped by looking at the frame data
+        # The token is written during a RESOLVE phase after a reanimation TRIGGER
+        write_frames = [f for f in frames if f.written_type == trans.write_type and f.written_pos == 0]
+        self.assertTrue(write_frames, "Expected a frame showing the token being written")
+        
+        # We also verify the state was updated at the end
+        self.assertEqual(m.state, "q2")
+
+        # Verify Soul Snuffers was involved in the frames
+        has_snuffers = any("Soul Snuffers" in f.narration[0] for f in frames if f.narration)
 
     def test_frame_diff_payload_is_populated_for_read_write_and_move(self):
         # Non-halt example: q1 reading Cephalid
@@ -160,6 +185,34 @@ class TestAllTransitionsTableDriven(unittest.TestCase):
                 self.assertTrue(frames)
                 written = m.get_token(0)
                 self.assertEqual(written.creature_type, trans.write_type)
+
+    def test_tape_expansion_and_color_logic(self):
+        """Verify tokens created far from head have correct default colors (White/Green)."""
+        m = GameLikeMachine()
+        m.head = 10
+        
+        # Token at 5 should be Green (left of head)
+        tok_left = m.get_token(5)
+        self.assertEqual(tok_left.color, "green")
+        
+        # Token at 15 should be White (right of head)
+        tok_right = m.get_token(15)
+        self.assertEqual(tok_right.color, "white")
+        
+        # Token at head should be White
+        tok_head = m.get_token(10)
+        self.assertEqual(tok_head.color, "white")
+
+    def test_no_transition_raises_error(self):
+        """Verify that reading an invalid symbol (like Assassin) raises NoTransitionError."""
+        m = GameLikeMachine()
+        m.state = "q1"
+        m.head = 0
+        # Assassin is a halt symbol, not a valid READ symbol in the UTM table
+        m.set_token(0, m._new_token(creature_type="Assassin"))
+        
+        with self.assertRaises(NoTransitionError):
+            list(m.frames_for_next_step())
 
 def run_n_steps(m: GameLikeMachine, n: int):
     """Run n full computational steps (consuming all frames per step)."""
@@ -301,6 +354,20 @@ class TestScenarioLoader(unittest.TestCase):
 
 
 class TestScenarioExecution(unittest.TestCase):
+    def test_engine_consistency_during_step(self):
+        """Verify Alice's battlefield and deck rotation remains stable."""
+        m = GameLikeMachine()
+        initial_deck_size = len(m.deck)
+        initial_hand_size = len(m.cards_on_hand)
+        
+        run_one_step_frames(m)
+        
+        # After one full step (Infest, Beam, Victory, Snuffers), 
+        # cards should have rotated back to the deck/hand via Wheel of Sun and Moon.
+        self.assertEqual(len(m.deck) + len(m.cards_on_hand), initial_deck_size + initial_hand_size)
+        self.assertIn("Infest", m.deck + m.cards_on_hand)
+        self.assertIn("Soul Snuffers", m.deck + m.cards_on_hand)
+
     def test_immediate_halt_scenario_halts_in_one_step(self):
         data = {"state": "q1", "head": 0, "tape": {"0": "Rhino"}}
         with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:

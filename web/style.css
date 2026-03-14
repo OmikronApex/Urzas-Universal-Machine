@@ -38,10 +38,12 @@ body {
 .playmat {
     display: grid;
     grid-template-columns: 200px 1fr 300px;
-    grid-template-rows: 1fr;
+    grid-template-rows: 100%; /* Force the row to stay 100% of the available space */
     gap: 10px;
     padding: 10px;
-    overflow: hidden;
+    /* Allow fanned cards to overflow the playmat boundaries if necessary */
+    overflow: visible;
+    min-height: 0; /* Allow the grid itself to shrink */
 }
 
 .zone.compiler {
@@ -114,7 +116,7 @@ body {
     align-items: center;
     justify-content: center;
     flex: 1;
-    overflow-x: auto;
+    overflow-x: visible;
     padding: 40px 0;
     min-height: 220px;
     width: 100%; /* Ensure it spans the container */
@@ -144,7 +146,8 @@ body {
 
 /* Correct hover zoom on all battlefield cards */
 .zone.battlefield .card:hover,
-#bobPermanentsRow .card:hover,
+#bobPermanentsRow .card.stack-front:hover,
+#bobPermanentsRow .card.stack-front.stack-hovered,
 #aliceBattlefieldRow .card:hover {
     transform: scale(1.05) translateY(-10px) !important;
     box-shadow: 0 10px 20px rgba(0, 0, 0, 0.8); /* Highlight effect */
@@ -166,10 +169,17 @@ body {
     grid-row: 1;
     display: flex;
     flex-direction: column;
-    padding: 10px; /* FIX: Added 10px padding to match sidebar */
+    padding: 10px;
+    /* Constrain the height to the grid cell */
+    height: 100%;
+    min-height: 0;
+    /* Keep overflow visible for the deck fan-out */
+    overflow: visible;
+    background: rgba(0, 0, 0, 0.15);
+    position: relative;
 }
 
-/* Adjust Graveyard and Stack for sidebar fit */
+/* --- Narration Log --- */
 .graveyard-stack {
     position: relative;
     height: 230px; /* Adjusted for 210px card height */
@@ -243,6 +253,15 @@ body {
     justify-content: flex-end;
 }
 
+.hud-group {
+    display: flex;
+    gap: 2px;
+    background: rgba(0, 0, 0, 0.2);
+    padding: 2px;
+    border-radius: 8px;
+    border: 1px solid rgba(224, 193, 90, 0.2);
+}
+
 button, select, input[type="range"], textarea {
     background: rgba(0, 0, 0, 0.4);
     border-color: var(--gold);
@@ -269,6 +288,14 @@ button:hover {
     color: #000;
 }
 
+button:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+    box-shadow: none;
+    background: rgba(0, 0, 0, 0.4);
+    color: var(--gold);
+}
+
 /* Compile button remains the most prominent */
 button#btnCompile {
     border-color: var(--gold);
@@ -292,58 +319,6 @@ button#btnCompile:hover {
 }
 
 /* --- Playmat / Main Grid --- */
-
-.compiler-box {
-    margin-top: 22px;
-    display: flex;
-    gap: 16px;
-    height: calc(100% - 30px);
-}
-
-.assembler-editor {
-    flex: 2;
-    display: flex;
-}
-
-#assemblerInput {
-    flex: 1;
-    background: rgba(0, 0, 0, 0.4);
-    border: 1px solid rgba(224, 193, 90, 0.2);
-    color: #8fbdfa; /* A cooler color for logic */
-    padding: 10px;
-    font-family: 'Fira Code', ui-monospace, monospace;
-    font-size: 13px;
-    border-radius: 8px;
-    resize: none;
-    box-shadow: none;
-}
-
-.compiler-box-vertical {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-}
-
-#compileInput {
-    flex: 1;
-    background: rgba(0, 0, 0, 0.25);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    color: var(--gold);
-    padding: 10px;
-    font-family: ui-monospace, monospace;
-    font-size: 14px;
-    border-radius: 8px;
-    resize: none;
-    box-shadow: none;
-}
-
-.compiler-controls {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    width: 280px; /* Wider for alphabet list */
-}
 
 .hint {
     font-size: 9px; /* Slightly smaller for density */
@@ -373,11 +348,20 @@ button#btnCompile:hover {
     transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
     transform-origin: center center;
     /* Allow hover effects to bleed out of the stack */
-    overflow: visible; 
+    overflow: visible;
+}
+
+.card-stack .card {
+    transition: transform 0.2s, top 0.3s ease, left 0.3s ease, z-index 0s;
 }
 
 .card-stack.tapped {
     transform: rotate(90deg);
+}
+
+.card-stack.tapped:hover {
+    transform: rotate(0deg) scale(1.05) translateY(-10px);
+    z-index: 1000;
 }
 
 /* Fix hover interaction for attached cards (like Illusory Gains) */
@@ -423,13 +407,13 @@ button#btnCompile:hover {
 
 .card.phased-out {
     opacity: 0.3;
-    filter: grayscale(0.5) blur(1px);
+    filter: grayscale(0.9) blur(1px);
     transition: opacity 0.5s ease, filter 0.5s ease;
 }
 
 .card.phased-out:hover {
     opacity: 1;
-    filter: grayscale(0.5);
+    filter: grayscale(0.9);
     z-index: 100;
 }
 
@@ -488,13 +472,16 @@ button#btnCompile:hover {
     background: rgba(255, 255, 255, 0.07);
     border: 1px solid rgba(0, 0, 0, 0.3);
     padding: 4px 6px;
-    font-size: 10px; /* Slightly larger for readability */
-    line-height: 1.2;
+    font-size: 9px;
+    line-height: 1.1;
     color: #eee;
-    overflow-y: auto; /* Allow scroll if content is long */
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
+    overflow-y: auto;
+    display: block;
+    scrollbar-width: none; /* Firefox */
+}
+
+.card .text-box::-webkit-scrollbar {
+    display: none; /* Chrome/Safari */
 }
 
 .card .pt-box {
@@ -615,25 +602,55 @@ button#btnCompile:hover {
     color: #111;
 }
 
+/* --- MTG Symbols --- */
+.ms {
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    font-size: 8px;
+    font-weight: 900;
+    font-family: serif;
+    text-align: center;
+    line-height: 11px; /* Center character vertically */
+    margin: 0 1px;
+    vertical-align: baseline;
+    position: relative;
+    top: -1px; /* Fine-tune vertical position */
+    box-shadow: 0 1px 1px rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(0, 0, 0, 0.2);
+}
+
+.ms-tap {
+    background: #9da5a9;
+    color: #000;
+    transform: rotate(-45deg);
+}
+
+.ms-c {
+    background: #cccac3;
+    color: #000;
+}
+
 /* Remove the old card-level tapped logic */
 
 .card.head {
-        /* Use box-shadow instead of outline so it doesn't interfere with mouse hitboxes */
-        box-shadow: 0 0 0 3px var(--gold), 0 4px 10px rgba(0, 0, 0, 0.5) !important;
-        animation: headPulse 1.5s ease-in-out infinite;
-    }
+    /* Use box-shadow instead of outline so it doesn't interfere with mouse hitboxes */
+    box-shadow: 0 0 0 3px var(--gold), 0 4px 10px rgba(0, 0, 0, 0.5) !important;
+    animation: headPulse 1.5s ease-in-out infinite;
+}
 
-    @keyframes headPulse {
-        0% {
-            box-shadow: 0 0 0 3px rgba(224, 193, 90, 0.8), 0 4px 10px rgba(0, 0, 0, 0.5);
-        }
-        50% {
-            box-shadow: 0 0 0 1px rgba(224, 193, 90, 0.3), 0 4px 10px rgba(0, 0, 0, 0.5);
-        }
-        100% {
-            box-shadow: 0 0 0 3px rgba(224, 193, 90, 0.8), 0 4px 10px rgba(0, 0, 0, 0.5);
-        }
+@keyframes headPulse {
+    0% {
+        box-shadow: 0 0 0 3px rgba(224, 193, 90, 0.8), 0 4px 10px rgba(0, 0, 0, 0.5);
     }
+    50% {
+        box-shadow: 0 0 0 1px rgba(224, 193, 90, 0.3), 0 4px 10px rgba(0, 0, 0, 0.5);
+    }
+    100% {
+        box-shadow: 0 0 0 3px rgba(224, 193, 90, 0.8), 0 4px 10px rgba(0, 0, 0, 0.5);
+    }
+}
 
 .card.flash-new {
     animation: flashNew 0.5s ease-out;
@@ -661,6 +678,50 @@ button#btnCompile:hover {
     }
     100% {
         filter: brightness(1);
+    }
+}
+
+.card.pulse-plus {
+    animation: pulsePlus 0.8s ease-out forwards;
+    z-index: 10;
+}
+
+@keyframes pulsePlus {
+    0% {
+        box-shadow: 0 0 0 0 rgba(87, 211, 138, 0.8);
+        transform: scale(0.8);
+        border-color: #57d38a;
+    }
+    50% {
+        box-shadow: 0 0 30px 15px rgba(87, 211, 138, 0.5);
+        transform: scale(0.9);
+        border-color: #57d38a;
+    }
+    100% {
+        box-shadow: 0 0 0 0 rgba(87, 211, 138, 0);
+        transform: scale(0.8);
+    }
+}
+
+.card.pulse-minus {
+    animation: pulseMinus 0.8s ease-out forwards;
+    z-index: 10;
+}
+
+@keyframes pulseMinus {
+    0% {
+        box-shadow: 0 0 0 0 rgba(255, 89, 100, 0.8);
+        transform: scale(0.8);
+        border-color: #ff5964;
+    }
+    50% {
+        box-shadow: 0 0 30px 15px rgba(255, 89, 100, 0.5);
+        transform: scale(0.72);
+        border-color: #ff5964;
+    }
+    100% {
+        box-shadow: 0 0 0 0 rgba(255, 89, 100, 0);
+        transform: scale(0.8);
     }
 }
 
@@ -727,16 +788,160 @@ button#btnCompile:hover {
 /* --- Narration Log --- */
 
 .log-lines {
-    margin-top: 18px;
-    flex: 1;
+    margin-top: 10px;
+    flex: 1; /* Grow to fill space */
+    min-height: 0; /* Allow shrinking below content size to trigger scrolling */
     overflow-y: auto;
+    overflow-x: hidden; /* Prevent horizontal scrollbars from log text */
     display: flex;
+
     flex-direction: column;
     gap: 4px;
     font-family: ui-monospace, monospace;
     font-size: 12px;
     color: var(--muted);
-    padding-right: 10px;
+    padding: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 4px;
+}
+
+.deck-pile {
+    height: 240px;
+    flex: 0 0 auto;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-top: 10px;
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 4px;
+    perspective: 1000px;
+    /* Ensure deck stays contained vertically but can fan horizontally */
+    overflow: visible;
+    z-index: 50;
+}
+
+.deck-card-container {
+    position: absolute;
+    width: 150px;
+    height: 210px;
+    perspective: 1000px;
+    transition: transform 0.5s ease, left 0.5s ease, top 0.5s ease;
+    --index: 0; /* Default value to satisfy IDE linters */
+}
+
+.deck-card-flipper {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+    transform-style: preserve-3d;
+}
+
+/* Flip and Fan on hover */
+.deck-pile:hover .deck-card-flipper {
+    transform: rotateY(180deg);
+}
+
+.deck-pile:hover .deck-card-container {
+    /* Deeper cards (higher index) slide further left and down to fan out under the top card */
+    /* Increased the X-translation to -60px for a more pronounced fan */
+    transform: translate(calc(var(--index) * -60px), calc(var(--index) * 25px)) rotate(calc(var(--index) * -5deg));
+}
+
+/* Anchor the "Next Draw" card (index 0) so it stays prominent */
+.deck-pile:hover .deck-card-container.next-draw {
+    transform: translate(0, 0) scale(1.1) rotate(-3deg);
+    z-index: 100 !important; /* Ensure it's always above the fanned cards */
+}
+
+.deck-card-front, .deck-card-back {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    backface-visibility: hidden;
+    top: 0;
+    left: 0;
+    margin: 0 !important;
+}
+
+.deck-card-front {
+    transform: rotateY(180deg);
+    z-index: 2;
+}
+
+.deck-card-back {
+    z-index: 1;
+    transform: rotateY(0deg);
+}
+
+.next-draw-ribbon {
+    position: absolute;
+    top: 15px;
+    right: -35px;
+    background: var(--gold);
+    color: #000;
+    font-size: 10px;
+    font-weight: 900;
+    padding: 4px 40px;
+    transform: rotate(45deg);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+    z-index: 100;
+    pointer-events: none;
+}
+
+.card-back {
+    position: absolute;
+    width: 150px; /* Standard card width */
+    height: 210px; /* Standard card height */
+    background: #221c18;
+    border: 5px solid #1a1714; /* Consistent border */
+    border-radius: 8px;
+    box-shadow: -2px 2px 5px rgba(0, 0, 0, 0.5);
+    background-image: radial-gradient(circle at center, #3d2b1f 0%, #221c18 70%);
+    transition: transform 0.3s ease, left 0.3s ease, top 0.3s ease; /* Smooth hover transition */
+}
+
+/* Spread the stack slightly on hover to reveal individual cards */
+.deck-pile:hover .card-back {
+    /* Fan out the cards slightly to the left and up based on their position */
+    transform: translate(calc(var(--index) * 5px), calc(var(--index) * -15px)) rotate(calc(var(--index) * 1deg));
+    box-shadow: -5px 5px 15px rgba(0, 0, 0, 0.7);
+    cursor: help;
+}
+
+/* Individual card spread logic via style.css would be hard without nth-child,
+   so I'll use a CSS variable set by JS or just rely on general hover elevation. */
+.counter-badge {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    font-weight: 900;
+    color: white;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+    z-index: 10;
+    pointer-events: none;
+}
+
+.counter-plus {
+    background: radial-gradient(circle at center, #57d38a, #2e4d2e);
+    border: 1px solid #1a2e1a;
+}
+
+.counter-minus {
+    background: radial-gradient(circle at center, #ff5964, #7a1f26);
+    border: 1px solid #3d0f13;
 }
 
 .log-lines div {
@@ -834,10 +1039,4 @@ button#btnCompile:hover {
 .hand-zone .card:hover {
     transform: translateY(-40px) scale(1.05);
     z-index: 1100 !important;
-}
-
-/* Ensure Stack items also have sharp art corners and consistent borders */
-.stack-item {
-    transition: transform 0.2s;
-    border: 5px solid #1a1714 !important;
 }
