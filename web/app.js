@@ -91,7 +91,7 @@ function autoplayNext() {
 
     const sliderVal = Number(speed.value);
     // Linear mapping: 0 -> 1200ms, 100 -> 0ms
-    const delay = (100 - sliderVal) * 10;
+    const delay = (100 - sliderVal) * 2;
 
     autoplayTimer = setTimeout(() => {
         // If speed is very high, request a full step instead of a single frame
@@ -472,6 +472,10 @@ function render(snapshot, frame, graveyardData = [], stackData = []) {
             ? frame.phased_out
             : (snapshot.phased_out || []);
 
+        // Get the current scale from CSS to adjust offsets
+        const rootStyle = getComputedStyle(document.documentElement);
+        const cardScale = parseFloat(rootStyle.getPropertyValue('--card-scale')) || 1;
+
         const engineConfigs = [
             { name: "Rotlung Reanimator", state: "q1", tapped: false },
             { name: "Rotlung Reanimator", state: "q2", tapped: false },
@@ -530,8 +534,8 @@ function render(snapshot, frame, graveyardData = [], stackData = []) {
                             // Bottom card (highest visualOffset) stays at 0,0
                             // Front card (visualOffset 0) gets the most positive offset (bottom-right)
                             card.style.zIndex = (cards.length - visualOffset) * 10;
-                            card.style.top = `${(maxOffset - visualOffset) * 4}px`;
-                            card.style.left = `${(maxOffset - visualOffset) * 2}px`;
+                            card.style.top = `${(maxOffset - visualOffset) * 4 * cardScale}px`;
+                            card.style.left = `${(maxOffset - visualOffset) * 2 * cardScale}px`;
                             
                         });
 
@@ -594,8 +598,8 @@ function render(snapshot, frame, graveyardData = [], stackData = []) {
 
                 // Initial positioning: The first card (i=0) is the "front" of the stack
                 cardEl.style.position = "absolute";
-                cardEl.style.top = `${(count - 1 - i) * 4}px`;
-                cardEl.style.left = `${(count - 1 - i) * 2}px`;
+                cardEl.style.top = `${(count - 1 - i) * 4 * cardScale}px`;
+                cardEl.style.left = `${(count - 1 - i) * 2 * cardScale}px`;
                 cardEl.style.zIndex = (count - i) * 10;
 
                 stackContainer.appendChild(cardEl);
@@ -679,18 +683,22 @@ function render(snapshot, frame, graveyardData = [], stackData = []) {
         }
 
         // Add the main token
-        stackContainer.appendChild(tokenCard({pos, tok, isHead, blankSymbol, gainsAttached, flashClass}));
+        const mainCard = tokenCard({pos, tok, isHead, blankSymbol, gainsAttached, flashClass});
+        stackContainer.appendChild(mainCard);
 
         // Add Illusory Gains as a separate card if attached
         if (gainsAttached) {
-            stackContainer.appendChild(tokenCard({
+            const gainsCard = tokenCard({
                 pos,
                 tok: {creature_type: "Illusory Gains", color: "blue"},
                 isHead,
                 blankSymbol,
                 gainsAttached: false,
                 isAttachment: true
-            }));
+            });
+            gainsCard.classList.add("gains-attachment");
+
+            stackContainer.appendChild(gainsCard);
         }
 
         battlefieldRow.appendChild(stackContainer);
@@ -752,6 +760,8 @@ function render(snapshot, frame, graveyardData = [], stackData = []) {
     } else {
         const stackContainer = document.createElement("div");
         stackContainer.className = "card-stack stack-pile-visual";
+        const rootStyle = getComputedStyle(document.documentElement);
+        const cardScale = parseFloat(rootStyle.getPropertyValue('--card-scale')) || 1;
 
         for (let i = 0; i < stack.length; i++) {
             const isTop = (i === stack.length - 1);
@@ -781,14 +791,15 @@ function render(snapshot, frame, graveyardData = [], stackData = []) {
             spellEl.classList.add("stack-item");
 
             if (!isTop) {
-                spellEl.classList.add("attached");
+                spellEl.classList.add("stack-item-below");
                 // Stagger every item behind the one above it
-                const offset = (stack.length - 1 - i) * 26;
-                spellEl.style.top = `-${offset}px`;
+                const offset = (stack.length - 2 - i) * 30 * cardScale;
+                spellEl.style.top = `${offset}px`;
                 spellEl.style.zIndex = i;
             } else {
-                spellEl.style.zIndex = stack.length;
-                spellEl.style.top = "0px";
+                const offset = (stack.length - 1) * 30 * cardScale;
+                spellEl.style.zIndex = stack.length + 1;
+                spellEl.style.top = `${offset}px`;
             }
             stackContainer.appendChild(spellEl);
         }
