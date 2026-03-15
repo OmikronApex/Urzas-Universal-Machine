@@ -2,6 +2,10 @@
 
 A visual simulator for the Turing-complete construction from the paper ["Magic: The Gathering is Turing Complete"](https://arxiv.org/abs/1904.09828).
 
+## Screenshot
+
+![MTG-UTM Web UI](docs/screenshot.png)
+
 ## Overview
 
 This project implements a Universal Turing Machine using Magic: The Gathering game rules. The simulator features:
@@ -14,7 +18,7 @@ This project implements a Universal Turing Machine using Magic: The Gathering ga
 ## Installation
 ```
 bash
-# Create virtual environment (if not already created)
+# Create virtual environment
 python -m venv .venv
 
 # Activate virtual environment
@@ -33,31 +37,26 @@ python web_server.py
 Then open http://127.0.0.1:60720 in your browser.
 
 **Controls:**
-- **Step Frame**: Execute one visual frame (single phase)
-- **Step Step**: Execute one full computational step (complete turn cycle)
-- **Autoplay**: Automatically step through the simulation
-- **Radius**: Control how many tape cells are visible
-- **Scenario Selector**: Load different pre-configured machines
+- **Step Frame** — Execute one visual frame (single phase)
+- **Step Step** — Execute one full computational step (complete turn cycle)
+- **Play / Stop** — Autoplay through the simulation
+- **Speed** — Control autoplay speed
+- **Radius** — Control how many tape cells are visible around the head
+- **Scenario Selector** — Load different pre-configured machines
 
 ### Command-Line Interface
-
-```bash
-# Run a scenario from the command line
+```
+bash
 python MTGSimulator.py scenarios/short_run.json
 ```
-```
-
-
 ### Running Tests
-
-```shell script
+```
+bash
 python -m unittest test_MTG.py
 ```
-
-
 ## Project Structure
-
 ```
+
 MTGTuring/
 ├── MTGSimulator.py                       # Core Turing machine engine
 ├── UniversalTuringMachineTransitions.py  # State transition table
@@ -71,21 +70,19 @@ MTGTuring/
     ├── style.css
     └── images/                           # Card artwork
 ```
-
-
 ## How It Works
 
 The simulator models a Turing machine where:
 
 1. **Tape cells** are represented by creature tokens on the battlefield
 2. **Reading** is performed by Infest (kills creatures with -2/-2)
-3. **Writing** is triggered by Rotlung Reanimator/Xathrid Necromancer (create new tokens)
+3. **Writing** is triggered by Rotlung Reanimator / Xathrid Necromancer (create new tokens)
 4. **Head movement** is determined by token color:
-   - White = Move left (-1)
-   - Green = Move right (+1)
-   - Blue = Halt
+   - White → Move left (−1)
+   - Green → Move right (+1)
+   - Blue → Halt
 5. **State changes** are encoded in tapped status and triggered by Soul Snuffers
-6. **Halting** occurs when Coalition Victory wins (Assassin token + blue color)
+6. **Halting** occurs when Coalition Victory fires (Assassin token + blue color)
 
 ### Turn Structure
 
@@ -95,22 +92,25 @@ Each computational step consists of multiple game turns:
    - Untap Step (triggers Mesmeric Orb)
    - Upkeep Step (Wild Evocation casts a spell from hand)
    - Draw Step
-2. **Bob's Turn:** (simplified pass)
+2. **Bob's Turn:** pass
 3. Repeat until Soul Snuffers is cast (state change complete)
 
 ### Spell Rotation
 
-The machine cycles through these spells:
-- **Infest** → Read the tape
-- **Cleansing Beam** → Move the head
-- **Coalition Victory** → Check halt condition
-- **Soul Snuffers** → Update state
+The machine cycles through these spells each step:
+
+| Spell | Purpose |
+|---|---|
+| Infest | Read the tape (kills head creature) |
+| Cleansing Beam | Move the head (+2/+2 to direction color via Vigor) |
+| Coalition Victory | Check halt condition |
+| Soul Snuffers | Update state, move head |
 
 ## Scenario Format
 
-Scenarios are JSON files defining initial tape configuration:
-
-```json
+Scenarios are JSON files in `scenarios/` defining the initial tape configuration:
+```
+json
 {
   "name": "Example Scenario",
   "description": "A simple test",
@@ -133,11 +133,11 @@ Scenarios are JSON files defining initial tape configuration:
   }
 }
 ```
-
+The optional `expected` block is used by the test suite to validate correctness.
 
 ### Available Creature Types (Tape Symbols)
 
-- **Cephalid** (Blank symbol)
+- **Cephalid** — Blank symbol
 - Aetherborn, Assassin, Basilisk, Demon, Elf
 - Faerie, Giant, Harpy, Illusion, Juggernaut
 - Kavu, Leviathan, Myr, Noggle, Orc
@@ -147,27 +147,25 @@ Scenarios are JSON files defining initial tape configuration:
 
 ### Adding New Scenarios
 
-1. Create a new `.json` file in the `scenarios/` directory
-2. Define the initial state, head position, and tape contents
+1. Create a new `.json` file in `scenarios/`
+2. Define the initial `state`, `head`, and `tape`
 3. Optionally add an `expected` block for automated testing
 4. The scenario will automatically appear in the web UI selector
 
 ### Running in Development Mode
 
 The web server supports hot-reload:
-
-```shell script
-python web_server.py
-# Server will automatically restart on code changes
 ```
-
-
+bash
+python web_server.py
+# Server restarts automatically on code changes
+```
 ## Technical Details
 
-- **Python Version:** 3.10.6
+- **Python:** 3.10.6
 - **Frontend:** Vanilla JavaScript (no frameworks)
 - **Backend:** FastAPI with WebSocket support
-- **Testing:** Python unittest framework
+- **Testing:** Python `unittest`
 
 ## Credits
 
@@ -176,15 +174,12 @@ Based on the academic paper:
 
 ## License
 
-MIT License - See LICENSE file for details
+MIT License — see `LICENSE` for details.
 
 ## Contributing
 
-Contributions are welcome! Please feel free to submit issues or pull requests.
+Contributions are welcome! Please feel free to open issues or pull requests.
 
 ---
 
-**Note:** This is a theoretical simulation. The construction requires specific MTG card combinations and rule interpretations that may not be tournament-legal.
-```
-You can copy this entire block and paste it into your README.md file!
-```
+> **Note:** This is a theoretical simulation. The construction requires specific MTG card combinations and rule interpretations that may not be tournament-legal.

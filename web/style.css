@@ -6,26 +6,34 @@
     --muted: rgba(231, 238, 247, 0.7);
 
     --gold: #e0c15a;
+    --gold-glow: rgba(224, 193, 90, 0.2);
+    --gold-glow-hover: rgba(224, 193, 90, 0.4);
+    --gold-subtle: rgba(224, 193, 90, 0.2);
     --danger: #ff5964;
+    --danger-glow: rgba(255, 89, 100, 0.8);
 
     --w: #f5f1dd; /* white */
     --g: #57d38a; /* green */
+    --g-glow: rgba(87, 211, 138, 0.8);
     --u: #5aa5ff; /* blue */
+
+    --card-border: #1a1714;
+    --card-width: 150px;
+    --card-height: 210px;
 
     /* Base card scale — overridden by media queries below for shorter viewports */
     --card-scale: 1;
 }
 
 /* Shorter viewports: scale cards down */
-@media (max-height: 900px) {
-    :root { --card-scale: 0.7; }
-}
-@media (max-height: 800px) {
-    :root { --card-scale: 0.6; }
-}
-@media (max-height: 700px) {
-    :root { --card-scale: 0.5; }
-}
+@media (max-height: 1080px) { :root { --card-scale: 0.9; } }
+@media (max-height: 980px)  { :root { --card-scale: 0.85; } }
+@media (max-height: 900px)  { :root { --card-scale: 0.78; } }
+@media (max-height: 840px)  { :root { --card-scale: 0.72; } }
+@media (max-height: 800px)  { :root { --card-scale: 0.66; } }
+@media (max-height: 760px)  { :root { --card-scale: 0.60; } }
+@media (max-height: 720px)  { :root { --card-scale: 0.55; } }
+@media (max-height: 700px)  { :root { --card-scale: 0.5; } }
 
 * {
     box-sizing: border-box;
@@ -49,15 +57,16 @@ body {
     grid-template-rows: auto 1fr auto;
 }
 
+/* --- Playmat / Main Grid --- */
+
 .playmat {
     display: grid;
     grid-template-columns: clamp(170px, 12vw, 220px) 1fr clamp(250px, 18vw, 320px);
-    grid-template-rows: 100%; /* Force the row to stay 100% of the available space */
+    grid-template-rows: 100%;
     gap: 10px;
     padding: 10px;
-    /* Allow fanned cards to overflow the playmat boundaries if necessary */
     overflow: visible;
-    min-height: 0; /* Allow the grid itself to shrink */
+    min-height: 0;
 }
 
 .sidebar-left {
@@ -69,19 +78,19 @@ body {
     overflow-y: visible;
     padding: 10px;
     align-items: center;
-    background: rgba(0, 0, 0, 0.2); /* Subtle separation */
+    background: rgba(0, 0, 0, 0.2);
 }
 
 .sidebar-left .zone {
     width: 100%;
-    flex: 0 0 auto; /* Allow zones to define their own height based on children */
+    flex: 0 0 auto;
     display: flex;
     flex-direction: column;
     margin-bottom: 20px;
 }
 
 #graveyardList.pile {
-    min-height: 280px; /* Adjusted for shorter card height */
+    min-height: 280px;
     display: flex;
     flex-direction: column;
     justify-content: flex-start;
@@ -89,7 +98,7 @@ body {
 }
 
 #stackPile.pile {
-    min-height: 260px; /* Adjusted for shorter card height */
+    min-height: 260px;
     padding: 0;
 }
 
@@ -98,33 +107,35 @@ body {
     font-weight: bold;
     color: var(--gold);
     letter-spacing: 1px;
-    margin-bottom: 10px;
+    margin-bottom: calc(10px * var(--card-scale));
     padding-bottom: 5px;
     border-bottom: 1px solid rgba(255, 255, 255, 0.1);
     flex: 0 0 auto;
 }
+
+/* --- Battlefield --- */
 
 .zone.battlefield {
     grid-column: 2;
     grid-row: 1;
     display: flex;
     flex-direction: column;
-    align-self: stretch; /* was flex-start — now fills the grid cell height */
+    align-self: stretch;
     padding: 10px;
-    min-height: 0; /* Allow shrinking within the grid */
-    overflow-y: auto; /* Scroll if content still overflows */
+    min-height: 0;
+    overflow-y: auto;
 }
 
 .battlefield-row {
-    margin-top: clamp(5px, 1vh, 30px); /* tighter than before */
+    margin-top: calc(10px * var(--card-scale));
     display: flex;
     gap: clamp(10px, 2vw, 40px);
     align-items: center;
     justify-content: center;
-    flex: 1 1 0; /* Allow rows to shrink equally */
+    flex: 1 1 0;
     overflow-x: visible;
-    padding: clamp(5px, 1.5vh, 40px) 0;
-    min-height: 0; /* Remove the clamp min-height — let flex handle it */
+    padding: calc(20px * var(--card-scale)) 0;
+    min-height: 0;
     width: 100%;
 }
 
@@ -133,21 +144,30 @@ body {
     background: rgba(255, 255, 255, 0.02);
 }
 
-#aliceBattlefieldRow .card {
-    transform: scale(var(--card-scale));
-    transform-origin: top center;
-    transition: transform 0.2s, margin 0.2s, z-index 0s;
-}
-
 /* Maintain consistent sizes for all battlefield cards */
 .zone.battlefield .card,
 #bobPermanentsRow .card,
 #aliceBattlefieldRow .card {
-    width: 150px;
-    height: 210px;
-    transform: scale(var(--card-scale)); /* Responsive visual scaling */
-    transform-origin: center center; /* Consistent scaling from the center */
-    transition: transform 0.2s, box-shadow 0.2s; /* Smooth zoom hover effect */
+    width: var(--card-width);
+    height: var(--card-height);
+    transform: scale(var(--card-scale));
+    transform-origin: center center;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+
+#bobPermanentsRow .card {
+    transform-origin: top center;
+}
+
+#bobPermanentsRow .card-stack {
+    align-items: flex-start;
+    justify-content: flex-start;
+}
+
+#battlefieldRow .card-stack {
+    align-items: flex-start;
+    justify-content: flex-start;
 }
 
 /* Correct hover zoom on all battlefield cards */
@@ -156,19 +176,18 @@ body {
 #bobPermanentsRow .card.stack-front.stack-hovered,
 #aliceBattlefieldRow .card:hover {
     transform: scale(1.05) translateY(-10px) !important;
-    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.8); /* Highlight effect */
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.8);
     z-index: 1000;
 }
 
-
-.stack-item {
-    transition: transform 0.2s;
-    border: 5px solid #1a1714 !important; /* Consistent border width */
-    overflow: hidden;
+/* Only allow hover pop-up for attachments in the main battlefield, not Bob's engine row */
+.zone.battlefield .card.attached:hover {
+    transform: translateY(-40px) scale(1.05) !important;
+    z-index: 2000 !important;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 1);
 }
 
-
-/* --- Battlefield --- */
+/* --- Narration Log --- */
 
 .zone.log {
     grid-column: 3;
@@ -176,40 +195,11 @@ body {
     display: flex;
     flex-direction: column;
     padding: 10px;
-    /* Constrain the height to the grid cell */
     height: 100%;
     min-height: 0;
-    /* Keep overflow visible for the deck fan-out */
     overflow: visible;
     background: rgba(0, 0, 0, 0.15);
     position: relative;
-}
-
-/* --- Narration Log --- */
-.graveyard-stack {
-    position: relative;
-    height: 230px; /* Adjusted for 210px card height */
-    width: 150px;
-    margin: 10px auto;
-    transform: scale(var(--card-scale)); /* Slight scale to fit the 200px sidebar */
-}
-
-.zone.stack .pile {
-    display: flex;
-    flex-direction: column;
-    gap: -40px; /* Overlap adjusted for 210px height */
-    padding-top: 20px;
-}
-
-.zone.stack .card {
-    transform: scale(var(--card-scale));
-    transform-origin: top center;
-    transition: margin 0.2s;
-}
-
-.zone.stack .card:hover {
-    margin-bottom: 0; /* Peek at card on hover */
-    z-index: 100;
 }
 
 /* --- HUD / Header --- */
@@ -239,15 +229,15 @@ body {
 
 .pill {
     padding: 6px 12px;
-    border-radius: 6px; /* Match button corner radius */
+    border-radius: 6px;
     background: rgba(0, 0, 0, 0.3);
-    border: 1px solid var(--gold); /* Gold border like the compile button */
+    border: 1px solid var(--gold);
     font-size: 11px;
     font-weight: 700;
     color: var(--gold);
     text-transform: uppercase;
     letter-spacing: 0.5px;
-    box-shadow: inset 0 0 5px rgba(224, 193, 90, 0.1);
+    box-shadow: inset 0 0 5px var(--gold-glow);
 }
 
 .hud-right {
@@ -264,7 +254,7 @@ body {
     background: rgba(0, 0, 0, 0.2);
     padding: 2px;
     border-radius: 8px;
-    border: 1px solid rgba(224, 193, 90, 0.2);
+    border: 1px solid var(--gold-subtle);
 }
 
 button, select, input[type="range"], textarea {
@@ -276,7 +266,7 @@ button, select, input[type="range"], textarea {
     font-family: inherit;
     transition: all 0.2s ease;
     font-weight: bold;
-    box-shadow: 0 0 10px rgba(224, 193, 90, 0.2);
+    box-shadow: 0 0 10px var(--gold-glow);
 }
 
 button {
@@ -288,7 +278,7 @@ button {
 }
 
 button:hover {
-    box-shadow: 0 0 15px rgba(224, 193, 90, 0.4);
+    box-shadow: 0 0 15px var(--gold-glow-hover);
     background: var(--gold);
     color: #000;
 }
@@ -301,19 +291,7 @@ button:disabled {
     color: var(--gold);
 }
 
-/* Compile button remains the most prominent */
-button#btnCompile {
-    border-color: var(--gold);
-    color: var(--gold);
-    font-weight: bold;
-    box-shadow: 0 0 10px rgba(224, 193, 90, 0.2);
-}
-
-button#btnCompile:hover {
-    box-shadow: 0 0 15px rgba(224, 193, 90, 0.4);
-    background: var(--gold);
-    color: #000;
-}
+/* button#btnCompile inherits all needed styles from the button rules above */
 
 .inline {
     display: flex;
@@ -323,10 +301,8 @@ button#btnCompile:hover {
     color: var(--muted);
 }
 
-/* --- Playmat / Main Grid --- */
-
 .hint {
-    font-size: 9px; /* Slightly smaller for density */
+    font-size: 9px;
     color: var(--muted);
     font-style: normal;
     line-height: 1.4;
@@ -342,13 +318,13 @@ button#btnCompile:hover {
     font-size: 10px;
 }
 
-/* --- Battlefield --- */
+/* --- Card Stack --- */
 
 .card-stack {
     position: relative;
-    width: calc(150px * var(--card-scale));
-    height: calc(210px * var(--card-scale)); /* Scale with card size instead of fixed 210px */
-    margin: 0; /* Let flex gap handle spacing */
+    width: calc(var(--card-width) * var(--card-scale));
+    height: calc(var(--card-height) * var(--card-scale));
+    margin: 0;
     flex: 0 0 auto;
     transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
     display: flex;
@@ -357,8 +333,18 @@ button#btnCompile:hover {
     overflow: visible;
 }
 
-.card-stack .card {
-    transition: transform 0.2s, top 0.3s ease, left 0.3s ease, z-index 0s;
+/* Tape cards: container uses full unscaled size so rotate(90deg) pivots on the true card centre */
+#battlefieldRow .card-stack {
+    width: var(--card-width);
+    height: var(--card-height);
+    margin-left: calc((var(--card-width) - var(--card-width) * var(--card-scale)) / -2);
+    margin-right: calc((var(--card-width) - var(--card-width) * var(--card-scale)) / -2);
+}
+
+/* Tapped cards rotate 90°, so their visual footprint is card-height wide — add margin for the overhang */
+#battlefieldRow .card-stack.tapped {
+    margin-left: calc((var(--card-width) - var(--card-width) * var(--card-scale)) / -2 + (var(--card-height) - var(--card-width)) / 2 * var(--card-scale));
+    margin-right: calc((var(--card-width) - var(--card-width) * var(--card-scale)) / -2 + (var(--card-height) - var(--card-width)) / 2 * var(--card-scale));
 }
 
 .card-stack.tapped {
@@ -370,55 +356,14 @@ button#btnCompile:hover {
     z-index: 1000;
 }
 
-/* Fix hover interaction for attached cards (like Illusory Gains) */
-.card.attached {
-    position: absolute;
-    top: calc(-30px * var(--card-scale)); /* Changed from calc(-30px * var(--card-scale)) to align properly when rotated */
-    left: 0;
-    z-index: 0;
-    width: 150px; /* Match card dimensions */
-    height: 210px; /* Match card dimensions */
-    border-radius: 8px;
-    pointer-events: auto; /* Allow pointer interactions */
-    transition: transform 0.2s, box-shadow 0.2s, z-index 0s;
-}
-
-.card.attached.gains-attachment {
-    top: calc(-30px * var(--card-scale));
-}
-
-/* Maintain consistent sizes for all battlefield cards */
-.zone.battlefield .card,
-#bobPermanentsRow .card,
-#aliceBattlefieldRow .card {
-    width: 150px;
-    height: 210px;
-    transform: scale(var(--card-scale)); /* Responsive visual scaling */
-    transform-origin: center center; /* Consistent scaling from the center */
-    transition: transform 0.2s, box-shadow 0.2s; /* Smooth zoom hover effect */
-}
-
-#battlefieldRow .card {
-    transform-origin: top left;
-}
-
-#battlefieldRow .card-stack {
-    align-items: flex-start;
-    justify-content: flex-start;
-}
-/* Only allow hover pop-up for attachments in the main battlefield, not Bob's engine row */
-.zone.battlefield .card.attached:hover {
-    transform: translateY(-40px) scale(1.05) !important;
-    z-index: 2000 !important; /* Higher than any other stack element */
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 1);
-}
+/* --- Card --- */
 
 .card {
-    width: 150px;
-    height: 210px; /* Adjusted from 240px to match MTG ratio */
+    width: var(--card-width);
+    height: var(--card-height);
     border-radius: 8px;
-    background: #17191d; /* Fallback */
-    border: 5px solid #1a1714;
+    background: #17191d;
+    border: 5px solid var(--card-border);
     box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
     position: relative;
     flex: 0 0 auto;
@@ -427,7 +372,7 @@ button#btnCompile:hover {
     padding: 4px;
     gap: 2px;
     transition: transform 0.2s, box-shadow 0.2s, margin 0.2s;
-    z-index: 1; /* Ensure main card is above the attachment */
+    z-index: 1;
 }
 
 .card.tapped {
@@ -444,6 +389,23 @@ button#btnCompile:hover {
     opacity: 1;
     filter: grayscale(0.9);
     z-index: 100;
+}
+
+/* Fix hover interaction for attached cards (like Illusory Gains) */
+.card.attached {
+    position: absolute;
+    top: calc(-30px * var(--card-scale));
+    left: 0;
+    z-index: 0;
+    width: var(--card-width);
+    height: var(--card-height);
+    border-radius: 8px;
+    pointer-events: auto;
+    transition: transform 0.2s, box-shadow 0.2s, z-index 0s;
+}
+
+.card.attached.gains-attachment {
+    top: calc(-30px * var(--card-scale));
 }
 
 .card-frame {
@@ -464,10 +426,10 @@ button#btnCompile:hover {
     padding: 2px 4px;
     font-weight: bold;
     font-size: 10px;
-    display: block; /* Changed from flex to allow full width text flow */
-    white-space: nowrap; /* Prevent wrapping to second line */
-    overflow: hidden; /* Hide overflow if name is still too long */
-    text-overflow: ellipsis; /* Add ... if text is cut off */
+    display: block;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
     box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2);
 }
 
@@ -475,7 +437,7 @@ button#btnCompile:hover {
     height: 88px;
     margin: 2px 0;
     border: 1px solid #000;
-    border-radius: 0 !important; /* FIX: Sharp corners for art */
+    border-radius: 0 !important;
     background: #2a2d33;
     background-size: cover;
     background-position: center;
@@ -525,13 +487,11 @@ button#btnCompile:hover {
     z-index: 2;
 }
 
+/* --- Card Colours --- */
+
 .card.color-white {
     background: #dcdad0;
     color: #222;
-}
-
-.card.color-white .card-frame {
-    border-color: #2e4d2e;
 }
 
 .card.color-white .text-box {
@@ -539,53 +499,23 @@ button#btnCompile:hover {
     background: rgba(255, 255, 255, 0.3);
 }
 
-.card.color-green {
-    background: #6b8e6b;
-    color: #fff;
-}
-
-.card.color-green .card-frame {
-    border-color: #2e4d2e;
-}
-
-.card.color-blue {
-    background: #6b8fb3;
-    color: #fff;
-}
-
-.card.color-blue .card-frame {
-    border-color: #2e4d2e;
-}
+.card.color-green  { background: #6b8e6b; color: #fff; }
+.card.color-blue   { background: #6b8fb3; color: #fff; }
 
 .card.color-black {
     background: #3a3633;
     color: #eee;
 }
 
-.card.color-black .card-frame {
-    border-color: #2e4d2e;
-}
-
 .card.color-black .name-line {
     background: rgba(255, 255, 255, 0.05);
 }
 
-.card.color-red {
-    background: #b14538;
-    color: #fff;
-}
-
-.card.color-red .card-frame {
-    border-color: #2e4d2e;
-}
+.card.color-red  { background: #b14538; color: #fff; }
 
 .card.color-gold {
     background: #c5a545;
     color: #222;
-}
-
-.card.color-gold .card-frame {
-    border-color: #2e4d2e;
 }
 
 .card.color-gold .text-box {
@@ -596,24 +526,12 @@ button#btnCompile:hover {
     background: linear-gradient(90deg, #6b8e6b 0%, #dcdad0 100%);
 }
 
-.card.color-green-white .card-frame {
-    border-color: #2e4d2e;
-}
-
 .card.color-black-green-white {
     background: linear-gradient(90deg, #6b8e6b 0%, #3a3633 25%, #3a3633 50%, #dcdad0 100%);
 }
 
-.card.color-black-green-white .card-frame {
-    border-color: #2e4d2e;
-}
-
 .card.color-white-black-red-green {
     background: linear-gradient(90deg, #dcdad0 0%, #3a3633 25%, #b14538 50%, #6b8e6b 100%);
-}
-
-.card.color-white-black-red-green .card-frame {
-    border-color: #2e4d2e;
 }
 
 .card.color-colorless {
@@ -631,7 +549,21 @@ button#btnCompile:hover {
     color: #111;
 }
 
+/* Shared card-frame border colour for most colour identities */
+.card.color-white .card-frame,
+.card.color-green .card-frame,
+.card.color-blue .card-frame,
+.card.color-black .card-frame,
+.card.color-red .card-frame,
+.card.color-gold .card-frame,
+.card.color-green-white .card-frame,
+.card.color-black-green-white .card-frame,
+.card.color-white-black-red-green .card-frame {
+    border-color: #2e4d2e;
+}
+
 /* --- MTG Symbols --- */
+
 .ms {
     display: inline-block;
     width: 12px;
@@ -641,11 +573,11 @@ button#btnCompile:hover {
     font-weight: 900;
     font-family: serif;
     text-align: center;
-    line-height: 11px; /* Center character vertically */
+    line-height: 11px;
     margin: 0 1px;
     vertical-align: baseline;
     position: relative;
-    top: -1px; /* Fine-tune vertical position */
+    top: -1px;
     box-shadow: 0 1px 1px rgba(0, 0, 0, 0.3);
     border: 1px solid rgba(0, 0, 0, 0.2);
 }
@@ -661,7 +593,7 @@ button#btnCompile:hover {
     color: #000;
 }
 
-/* Remove the old card-level tapped logic */
+/* --- Card Highlights & Animations --- */
 
 .card.head {
     box-shadow: 0 0 0 3px var(--gold), 0 4px 10px rgba(0, 0, 0, 0.5) !important;
@@ -674,14 +606,14 @@ button#btnCompile:hover {
 
 @keyframes flashDied {
     0% {
-        box-shadow: 0 0 0 0 rgba(255, 89, 100, 0.9);
+        box-shadow: 0 0 0 0 var(--danger-glow);
         transform: scale(var(--card-scale));
-        border-color: #ff5964;
+        border-color: var(--danger);
     }
     40% {
         box-shadow: 0 0 30px 15px rgba(255, 89, 100, 0.6);
         transform: scale(calc(var(--card-scale) - 0.08));
-        border-color: #ff5964;
+        border-color: var(--danger);
     }
     100% {
         box-shadow: 0 0 0 0 rgba(255, 89, 100, 0);
@@ -697,14 +629,14 @@ button#btnCompile:hover {
 
 @keyframes pulsePlus {
     0% {
-        box-shadow: 0 0 0 0 rgba(87, 211, 138, 0.8);
+        box-shadow: 0 0 0 0 var(--g-glow);
         transform: scale(var(--card-scale));
-        border-color: #57d38a;
+        border-color: var(--g);
     }
     50% {
         box-shadow: 0 0 30px 15px rgba(87, 211, 138, 0.5);
         transform: scale(calc(var(--card-scale) + 0.1));
-        border-color: #57d38a;
+        border-color: var(--g);
     }
     100% {
         box-shadow: 0 0 0 0 rgba(87, 211, 138, 0);
@@ -719,14 +651,14 @@ button#btnCompile:hover {
 
 @keyframes pulseMinus {
     0% {
-        box-shadow: 0 0 0 0 rgba(255, 89, 100, 0.8);
+        box-shadow: 0 0 0 0 var(--danger-glow);
         transform: scale(var(--card-scale));
-        border-color: #ff5964;
+        border-color: var(--danger);
     }
     50% {
         box-shadow: 0 0 30px 15px rgba(255, 89, 100, 0.5);
         transform: scale(calc(var(--card-scale) - 0.08));
-        border-color: #ff5964;
+        border-color: var(--danger);
     }
     100% {
         box-shadow: 0 0 0 0 rgba(255, 89, 100, 0);
@@ -744,13 +676,21 @@ button#btnCompile:hover {
     overflow-y: auto;
     flex: 1;
     padding: 10px;
+    align-items: center;
+}
+
+.pile div {
+    font-size: 11px;
+    padding: 5px 5px;
+    border-radius: 6px;
 }
 
 .graveyard-stack {
     position: relative;
-    height: 240px; /* Adjusted for 210px card + stack offsets */
-    width: 150px;
+    height: 240px;
+    width: var(--card-width);
     margin: 20px auto;
+    transform: scale(var(--card-scale));
 }
 
 .graveyard-item {
@@ -758,22 +698,12 @@ button#btnCompile:hover {
     transform-origin: center center;
     box-shadow: -2px 2px 10px rgba(0, 0, 0, 0.6) !important;
     transition: transform 0.2s;
-    border: 5px solid #1a1714 !important; /* Consistent border width */
-    overflow: hidden; /* Ensure content is clipped if tucked */
+    border: 5px solid var(--card-border) !important;
+    overflow: hidden;
 }
 
 .graveyard-item.head {
     outline: none !important;
-}
-
-.stack-item {
-    transition: transform 0.2s;
-    border: 5px solid #1a1714 !important; /* Consistent border width */
-    overflow: visible;
-}
-
-.stack-item.stack-item-below {
-    position: absolute;
 }
 
 /* Remove the glow/highlight from graveyard items */
@@ -786,28 +716,47 @@ button#btnCompile:hover {
 }
 
 .graveyard-item .card-frame {
-    background: inherit !important; /* Restore color from parent card */
+    background: inherit !important;
     border: 1px solid rgba(255, 255, 255, 0.1) !important;
 }
 
-/* Remove the old scale(0.7) and let them be full size */
+.stack-item {
+    transition: transform 0.2s;
+    border: 5px solid var(--card-border) !important;
+    overflow: hidden;
+}
 
-.pile div {
-    font-size: 11px;
-    padding: 5px 5px;
-    border-radius: 6px;
+.stack-item.stack-item-below {
+    position: absolute;
+}
+
+.zone.stack .pile {
+    display: flex;
+    flex-direction: column;
+    gap: -40px;
+    padding-top: 20px;
+}
+
+.zone.stack .card {
+    transform: scale(var(--card-scale));
+    transform-origin: top center;
+    transition: margin 0.2s;
+}
+
+.zone.stack .card:hover {
+    margin-bottom: 0;
+    z-index: 100;
 }
 
 /* --- Narration Log --- */
 
 .log-lines {
     margin-top: 10px;
-    flex: 1; /* Grow to fill space */
-    min-height: 0; /* Allow shrinking below content size to trigger scrolling */
+    flex: 1;
+    min-height: 0;
     overflow-y: auto;
-    overflow-x: hidden; /* Prevent horizontal scrollbars from log text */
+    overflow-x: hidden;
     display: flex;
-
     flex-direction: column;
     gap: 4px;
     font-family: ui-monospace, monospace;
@@ -818,6 +767,13 @@ button#btnCompile:hover {
     background: rgba(0, 0, 0, 0.2);
     border-radius: 4px;
 }
+
+.log-lines div {
+    padding: 2px 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+}
+
+/* --- Deck --- */
 
 .deck-pile {
     height: 240px;
@@ -831,18 +787,17 @@ button#btnCompile:hover {
     border: 1px solid rgba(255, 255, 255, 0.05);
     border-radius: 4px;
     perspective: 1000px;
-    /* Ensure deck stays contained vertically but can fan horizontally */
     overflow: visible;
     z-index: 50;
 }
 
 .deck-card-container {
     position: absolute;
-    width: 150px;
-    height: 210px;
+    width: var(--card-width);
+    height: var(--card-height);
     perspective: 1000px;
     transition: transform 0.5s ease, left 0.5s ease, top 0.5s ease;
-    --index: 0; /* Default value to satisfy IDE linters */
+    --index: 0;
 }
 
 .deck-card-flipper {
@@ -853,21 +808,17 @@ button#btnCompile:hover {
     transform-style: preserve-3d;
 }
 
-/* Flip and Fan on hover */
 .deck-pile:hover .deck-card-flipper {
     transform: rotateY(180deg);
 }
 
 .deck-pile:hover .deck-card-container {
-    /* Deeper cards (higher index) slide further left and down to fan out under the top card */
-    /* Increased the X-translation to -60px for a more pronounced fan */
     transform: translate(calc(var(--index) * -60px), calc(var(--index) * 25px)) rotate(calc(var(--index) * -5deg));
 }
 
-/* Anchor the "Next Draw" card (index 0) so it stays prominent */
 .deck-pile:hover .deck-card-container.next-draw {
     transform: translate(0, 0) scale(1.1) rotate(-3deg);
-    z-index: 100 !important; /* Ensure it's always above the fanned cards */
+    z-index: 100 !important;
 }
 
 .deck-card-front, .deck-card-back {
@@ -907,17 +858,16 @@ button#btnCompile:hover {
 
 .card-back {
     position: absolute;
-    width: 150px; /* Standard card width */
-    height: 210px; /* Standard card height */
+    width: var(--card-width);
+    height: var(--card-height);
     background: #221c18;
-    border: 5px solid #1a1714; /* Consistent border */
+    border: 5px solid var(--card-border);
     border-radius: 8px;
     box-shadow: -2px 2px 5px rgba(0, 0, 0, 0.5);
     background-image: radial-gradient(circle at center, #3d2b1f 0%, #221c18 70%);
-    transition: transform 0.3s ease, left 0.3s ease, top 0.3s ease; /* Smooth hover transition */
+    transition: transform 0.3s ease, left 0.3s ease, top 0.3s ease;
 }
 
-/* Spread the stack slightly on hover to reveal individual cards */
 .deck-pile:hover .card-back {
     /* Fan out the cards slightly to the left and up based on their position */
     transform: translate(calc(var(--index) * 5px), calc(var(--index) * -15px)) rotate(calc(var(--index) * 1deg));
