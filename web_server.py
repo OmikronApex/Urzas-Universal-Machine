@@ -127,7 +127,7 @@ class _Session:
     """Maintains server-side state for a client session."""
 
     def __init__(self) -> None:
-        self.scenario_name: str = "short_run.json"
+        self.scenario_name: str = "empty_tape.json"
         self.machine: GameLikeMachine = self._load(self.scenario_name)
         self.frame_iter: Optional[Iterator[Any]] = None
         self.graveyard_cards: List[dict] = []
