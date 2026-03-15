@@ -2,6 +2,8 @@
 
 A visual simulator for the Turing-complete construction from the paper ["Magic: The Gathering is Turing Complete"](https://arxiv.org/abs/1904.09828).
 
+For sake of simplicity, the simulator uses a tape of infinite size and considers key cards like blazing archon to have infinite power and toughness, making this setup not quite tournament legal.
+
 ## Screenshot
 
 ![MTG-UTM Web UI](docs/screenshot.png)
