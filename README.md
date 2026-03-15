@@ -176,7 +176,9 @@ Based on the academic paper:
 
 ## License
 
-MIT License — see `LICENSE` for details.
+This project is licensed under the Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International License (CC BY-NC-SA 4.0) — see `LICENSE` for details.
+
+Card images and data are sourced from [Scryfall](https://scryfall.com/) and are subject to Wizards of the Coast's Fan Content Policy.
 
 ## Contributing
 
