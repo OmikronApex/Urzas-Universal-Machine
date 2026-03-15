@@ -1,4 +1,4 @@
-# MTG-UTM
+# Urza’s Universal Machine
 
 A visual simulator for the Turing-complete construction from the paper ["Magic: The Gathering is Turing Complete"](https://arxiv.org/abs/1904.09828).
 
