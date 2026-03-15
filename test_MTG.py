@@ -69,15 +69,15 @@ class TestAllTransitionsTableDriven(unittest.TestCase):
         frames = run_one_step_frames(m)
         phases = [f.phase for f in frames]
 
-        # Find the read frame (when Infest resolves)
-        read_frames = [f for f in frames if "RESOLVE" in f.phase and f.read_pos is not None]
+        # Find the read frame (SBA phase when the creature dies after Infest)
+        read_frames = [f for f in frames if "SBA" in f.phase and f.read_pos is not None]
         self.assertTrue(read_frames, "Expected at least one read frame")
         read_frame = read_frames[0]
         self.assertEqual(read_frame.read_pos, 0)
         self.assertEqual(read_frame.read_type, "Cephalid")
         self.assertTrue(read_frame.changed_positions, "Expected changed_positions for read frame")
 
-        # Find the write frame (when the trigger resolves)
+        # Find the write frame (RESOLVE phase when the trigger writes the new token)
         write_frames = [f for f in frames if f.written_pos is not None]
         self.assertTrue(write_frames, "Expected at least one write frame")
         write_frame = write_frames[0]
@@ -110,8 +110,8 @@ class TestAllTransitionsTableDriven(unittest.TestCase):
         self.assertIsNotNone(halt_frame.state_from)
         self.assertIsNotNone(halt_frame.state_to)
 
-        # The write happens before halt
-        write_frames = [f for f in frames if f.written_type == "Assassin"]
+        # The write happens before halt — only match frames where written_pos is also set
+        write_frames = [f for f in frames if f.written_type == "Assassin" and f.written_pos is not None]
         self.assertTrue(write_frames, "Expected Assassin to be written before halt")
         write_frame = write_frames[0]
         self.assertEqual(write_frame.written_pos, 0)
