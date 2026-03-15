@@ -132,12 +132,23 @@ function tokenCard({
     // VISUAL TWEAK: If this is an implicit Cephalid at the head position during
     // the "read/die" phase, make it invisible to show an empty slot.
     if (!isAttachment && creatureType === "Cephalid" && isHead) {
-        const phase = currentFrame?.phase || "";
         const tokenId = tok?.token_id ?? 0;
 
-        // Hide the placeholder if we are in the middle of a death/reanimate sequence
-        // (Between SBA death and RESOLVE of the reanimation trigger)
-        if (tokenId === 0 && (phase.includes("SBA") || phase.includes("TRIGGER"))) {
+        // Hide only when the slot is genuinely empty (no real token written yet)
+        // AND the current frame is the death SBA or the reanimator trigger.
+        // We identify this window by: read_pos points at the head AND written_pos is not yet set.
+        const headJustDied =
+            tokenId === 0 &&
+            currentFrame?.read_pos === pos &&
+            currentFrame?.written_pos == null;
+
+        const awaitingWrite =
+            tokenId === 0 &&
+            currentFrame?.read_pos == null &&
+            currentFrame?.written_pos == null &&
+            currentFrame?.read_type != null; // read_type lingers on the TRIGGER frame
+
+        if (headJustDied || awaitingWrite) {
             el.style.opacity = "0";
             el.style.pointerEvents = "none";
         }
