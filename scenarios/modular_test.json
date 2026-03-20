@@ -1,0 +1,14 @@
+{
+  "name": "Modular Gadget Test",
+  "engine": "gadget",
+  "state": "start",
+  "head": "Gadget_1",
+  "tape": {
+    "Gadget_1": { "creature_type": "Aetherborn", "token_id": 101 },
+    "Gadget_2": { "creature_type": "Elf", "token_id": 102 }
+  },
+  "controllers": {
+    "101": "Alice",
+    "102": "Alice"
+  }
+}

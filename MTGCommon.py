@@ -68,6 +68,7 @@ class BaseMTGMachine(ABC):
     cards_on_hand: List[str] = field(default_factory=list)
     deck: List[str] = field(default_factory=list)
     alice_battlefield: List[str] = field(default_factory=list)
+    bob_battlefield: List[str] = field(default_factory=list)
     _step_completed_flag: bool = field(default=False, repr=False)
     players: List[str] = field(default_factory=lambda: ["Alice", "Bob"])
     current_player_index: int = 1
@@ -93,5 +94,3 @@ class BaseMTGMachine(ABC):
 
     @abstractmethod
     def _resolve_spell(self, spell_name: str, turn: int, stack: List[str], emit) -> Iterator[Frame]: pass
-
-    # ... move frames_for_next_step, _alice_turn, _untap_step, _wild_evocation etc here ...

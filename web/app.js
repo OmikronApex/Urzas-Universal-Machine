@@ -10,6 +10,7 @@ const hudHalted = $("#hud-halted");
 
 const scenarioSelect = $("#scenarioSelect");
 const btnReset = $("#btnReset");
+const btnExport = $("#btnExport");
 const btnFrame = $("#btnFrame");
 const btnStep = $("#btnStep");
 const btnPlay = $("#btnPlay");
@@ -38,6 +39,294 @@ let utmRules = null;
 
 let autoplayActive = false;
 let autoplayTimer = null;
+
+/**
+ * Engine-specific rendering logic to handle different construction types.
+ */
+const EngineRenderers = {
+    /**
+     * The original (2,18) UTM implementation using Soul Snuffers and Infest.
+     */
+    rogozhin: {
+        renderTape(snapshot, frame) {
+            const tape = snapshot.tape || {};
+            const head = snapshot.head ?? 0;
+            const blankSymbol = "Cephalid";
+            const radiusN = Number(radius.value);
+
+            const lo = head - radiusN;
+            const hi = head + radiusN;
+
+            const logs = frame?.narration || [];
+            let pulseType = null;
+            let pulseTargetColor = null;
+
+            if (logs.some(l => l.includes("Vigor"))) {
+                pulseType = "plus";
+                pulseTargetColor = logs.some(l => l.includes("white")) ? "white" : "green";
+            } else if (logs.some(l => l.includes("Global Effect") || l.includes("Infest resolves"))) {
+                pulseType = "minus";
+                pulseTargetColor = "all";
+            } else if (logs.some(l => l.includes("Dread of Night"))) {
+                pulseType = "minus";
+                pulseTargetColor = "black";
+            }
+
+            battlefieldRow.innerHTML = "";
+            for (let pos = lo; pos <= hi; pos++) {
+                const defaultColor = (pos < head) ? "green" : "white";
+                const tok = tape[String(pos)] || {
+                    creature_type: blankSymbol,
+                    color: defaultColor,
+                    tapped: false,
+                    token_id: 0
+                };
+                const isHead = pos === head;
+                const gainsAttached = (snapshot.illusory_gains_attached_to != null) && (tok.token_id === snapshot.illusory_gains_attached_to);
+
+                const stackContainer = document.createElement("div");
+                stackContainer.className = "card-stack";
+                if (tok.tapped) stackContainer.classList.add("tapped");
+
+                let flashClass = null;
+                if (pulseType === "plus" && (pulseTargetColor === "all" || tok.color === pulseTargetColor)) {
+                    flashClass = "pulse-plus";
+                } else if (pulseType === "minus" && (pulseTargetColor === "all" || tok.color === pulseTargetColor)) {
+                    flashClass = "pulse-minus";
+                }
+
+                const mainCard = tokenCard({pos, tok, isHead, blankSymbol, gainsAttached, flashClass});
+                stackContainer.appendChild(mainCard);
+
+                if (gainsAttached) {
+                    stackContainer.appendChild(tokenCard({
+                        pos,
+                        tok: {creature_type: "Illusory Gains", color: "blue"},
+                        isHead,
+                        blankSymbol,
+                        isAttachment: true
+                    }));
+                }
+                battlefieldRow.appendChild(stackContainer);
+            }
+        },
+
+        renderEngineRow(snapshot, frame) {
+            bobPermanentsRow.innerHTML = "";
+            const phasedOutList = (frame && frame.phased_out && frame.phased_out.length > 0)
+                ? frame.phased_out
+                : (snapshot.phased_out || []);
+
+            const rootStyle = getComputedStyle(document.documentElement);
+            const cardScale = parseFloat(rootStyle.getPropertyValue('--card-scale')) || 1;
+
+            // Use Bob's battlefield data from the snapshot instead of hardcoded config
+            const bobBattlefield = snapshot.bob_battlefield || [];
+
+            // If no bob_battlefield data, fall back to empty array
+            if (bobBattlefield.length === 0) {
+                console.warn("No bob_battlefield data in snapshot");
+                return;
+            }
+
+            // Map of cards that need state/tapped configuration
+            const stateBasedCards = {
+                "Rotlung Reanimator": [
+                    {state: "q1", tapped: false},
+                    {state: "q2", tapped: false}
+                ],
+                "Xathrid Necromancer": [
+                    {state: "q1", tapped: true},
+                    {state: "q2", tapped: true}
+                ]
+            };
+
+            // Track which cards we've already rendered (to avoid duplicates)
+            const renderedStates = new Set();
+
+            bobBattlefield.forEach(cardName => {
+                if (stateBasedCards[cardName]) {
+                    // For reanimators, create state-based stacks
+                    stateBasedCards[cardName].forEach(config => {
+                        const key = `${cardName}-${config.state}-${config.tapped}`;
+                        if (!renderedStates.has(key)) {
+                            renderedStates.add(key);
+                            const stackContainer = createInteractiveStack(
+                                {name: cardName, state: config.state, tapped: config.tapped},
+                                phasedOutList,
+                                cardScale
+                            );
+                            bobPermanentsRow.appendChild(stackContainer);
+                        }
+                    });
+                } else {
+                    // For regular permanents, create a single card
+                    const stackContainer = createInteractiveStack(
+                        {name: cardName, count: 1},
+                        phasedOutList,
+                        cardScale
+                    );
+                    bobPermanentsRow.appendChild(stackContainer);
+                }
+            });
+        }
+    },
+
+    /**
+     * The 2024 Gadget-based construction using Choice Gadgets and Player Control.
+     */
+    gadget: {
+        renderTape(snapshot, frame) {
+            battlefieldRow.innerHTML = "";
+            const tape = snapshot.tape || {};
+            const extra = snapshot.extra || {};
+            const controllers = extra.controllers || {};
+            const head = snapshot.head;
+
+            Object.entries(tape).forEach(([pos, tok]) => {
+                const isHead = String(pos) === String(head);
+                const controller = controllers[tok.token_id] || "Alice";
+                const gainsAttached = (snapshot.illusory_gains_attached_to != null) && (tok.token_id === snapshot.illusory_gains_attached_to);
+
+                const stackContainer = document.createElement("div");
+                stackContainer.className = "card-stack";
+                if (tok.tapped) stackContainer.classList.add("tapped");
+
+                const card = tokenCard({
+                    pos,
+                    tok,
+                    isHead,
+                    controller,
+                    blankSymbol: "Aetherborn",
+                    gainsAttached
+                });
+                stackContainer.appendChild(card);
+
+                // Add Illusory Gains attachment if needed
+                if (gainsAttached) {
+                    stackContainer.appendChild(tokenCard({
+                        pos,
+                        tok: {creature_type: "Illusory Gains", color: "blue"},
+                        isHead,
+                        controller,
+                        blankSymbol: "Aetherborn",
+                        isAttachment: true
+                    }));
+                }
+
+                battlefieldRow.appendChild(stackContainer);
+            });
+        },
+
+        renderEngineRow(snapshot, frame) {
+            bobPermanentsRow.innerHTML = "";
+            const bobBattlefield = snapshot.bob_battlefield || [];
+            const rootStyle = getComputedStyle(document.documentElement);
+            const cardScale = parseFloat(rootStyle.getPropertyValue('--card-scale')) || 1;
+
+            bobBattlefield.forEach(cardName => {
+                const stackContainer = createInteractiveStack(
+                    {name: cardName, count: 1},
+                    [],
+                    cardScale
+                );
+                bobPermanentsRow.appendChild(stackContainer);
+            });
+        }
+    }
+};
+
+/**
+ * Helper for Rogozhin interactive engine stacks.
+ */
+function createInteractiveStack(config, phasedOutList, cardScale) {
+    const stackContainer = document.createElement("div");
+    stackContainer.className = "card-stack";
+    stackContainer.style.marginRight = "-20px";
+
+    let currentIndex = 0;
+
+    function updateStackFront(container, frontIndex) {
+        const cards = Array.from(container.querySelectorAll(".card:not(.attached)"));
+        cards.forEach((card, idx) => {
+            if (idx === frontIndex) {
+                card.classList.add("stack-front");
+                card.style.pointerEvents = "auto";
+            } else {
+                card.classList.remove("stack-front", "stack-hovered");
+                card.style.pointerEvents = "none";
+            }
+        });
+    }
+
+    stackContainer.addEventListener("wheel", (e) => {
+        const cards = Array.from(stackContainer.querySelectorAll(".card:not(.attached)"));
+        if (cards.length <= 1) return;
+        e.preventDefault();
+        currentIndex = (e.deltaY > 0) ? currentIndex + 1 : currentIndex - 1;
+        if (currentIndex < 0) currentIndex = cards.length - 1;
+        if (currentIndex >= cards.length) currentIndex = 0;
+        const maxOffset = cards.length - 1;
+        cards.forEach((card, idx) => {
+            const visualOffset = (idx - currentIndex + cards.length) % cards.length;
+            card.style.zIndex = (cards.length - visualOffset) * 10;
+            card.style.top = `${(maxOffset - visualOffset) * 4 * cardScale}px`;
+            card.style.left = `${(maxOffset - visualOffset) * 2 * cardScale}px`;
+        });
+        updateStackFront(stackContainer, currentIndex);
+    }, {passive: false});
+
+    stackContainer.addEventListener("mouseover", (e) => {
+        const hoveredCard = e.target.closest(".card");
+        const cards = Array.from(stackContainer.querySelectorAll(".card:not(.attached)"));
+        if (hoveredCard && hoveredCard.classList.contains("attached")) {
+            cards.forEach(c => c.classList.remove("stack-hovered"));
+            return;
+        }
+        if (cards[currentIndex]) cards[currentIndex].classList.add("stack-hovered");
+    });
+
+    stackContainer.addEventListener("mouseleave", () => {
+        const cards = Array.from(stackContainer.querySelectorAll(".card:not(.attached)"));
+        cards.forEach(c => c.classList.remove("stack-hovered"));
+    });
+
+    let stackTransitions = [];
+    if (utmRules && config.state) {
+        stackTransitions = Object.entries(utmRules[config.state])
+            .map(([readType, t]) => ({...t, read_type: readType}))
+            .filter(t => !!t.tapped === !!config.tapped);
+    }
+
+    const count = config.count ?? stackTransitions.length;
+    for (let i = 0; i < count; i++) {
+        const isBottom = (i === 0);
+        const isPhasedOut = config.state && phasedOutList.includes(config.state);
+        const cardEl = tokenCard({
+            pos: "Engine",
+            tok: {creature_type: config.name, color: "white", tapped: false},
+            transition: stackTransitions[i] || null
+        });
+        if (isPhasedOut) cardEl.classList.add("phased-out");
+        cardEl.style.position = "absolute";
+        cardEl.style.top = `${(count - 1 - i) * 4 * cardScale}px`;
+        cardEl.style.left = `${(count - 1 - i) * 2 * cardScale}px`;
+        cardEl.style.zIndex = (count - i) * 10;
+        stackContainer.appendChild(cardEl);
+
+        if (isBottom && (config.name.includes("Rotlung") || config.name.includes("Xathrid"))) {
+            const cloakEl = tokenCard({
+                pos: "Engine",
+                tok: {creature_type: "Cloak of Invisibility", color: "blue", tapped: false},
+                isAttachment: true
+            });
+            cloakEl.style.zIndex = 0;
+            stackContainer.appendChild(cloakEl);
+        }
+    }
+    updateStackFront(stackContainer, 0);
+    return stackContainer;
+}
 
 function wsUrl() {
     const proto = (location.protocol === "https:") ? "wss" : "ws";
@@ -490,247 +779,33 @@ function render(snapshot, frame, graveyardData = [], stackData = []) {
     updateHud(snapshot);
     renderDeck(snapshot.deck || []);
 
-// --- Bob's Global Permanents (The Trigger Engine) ---
-    if (bobPermanentsRow) {
-        bobPermanentsRow.innerHTML = "";
-        const phasedOutList = (frame && frame.phased_out && frame.phased_out.length > 0)
-            ? frame.phased_out
-            : (snapshot.phased_out || []);
+    const engine = snapshot.engine_name || "rogozhin";
+    const renderer = EngineRenderers[engine] || EngineRenderers.rogozhin;
 
-        // Get the current scale from CSS to adjust offsets
-        const rootStyle = getComputedStyle(document.documentElement);
-        const cardScale = parseFloat(rootStyle.getPropertyValue('--card-scale')) || 1;
+    renderer.renderEngineRow(snapshot, frame);
+    renderer.renderTape(snapshot, frame);
 
-        const engineConfigs = [
-            { name: "Rotlung Reanimator", state: "q1", tapped: false },
-            { name: "Rotlung Reanimator", state: "q2", tapped: false },
-            { name: "Xathrid Necromancer", state: "q1", tapped: true },
-            { name: "Xathrid Necromancer", state: "q2", tapped: true },
-            { name: "Wild Evocation", count: 1 },
-            { name: "Recycle", count: 1 },
-            { name: "Privileged Position", count: 1 },
-            { name: "Vigor", count: 1 },
-            { name: "Blazing Archon", count: 1 }
-        ];
-
-        engineConfigs.forEach(config => {
-            const stackContainer = document.createElement("div");
-            stackContainer.className = "card-stack";
-                stackContainer.style.marginRight = "-20px";
-
-                    // Mouse wheel churn logic
-                    let currentIndex = 0;
-
-                    // Helper: mark only the front card as interactive + hoverable
-                    function updateStackFront(container, frontIndex) {
-                        const cards = Array.from(container.querySelectorAll(".card:not(.attached)"));
-                        cards.forEach((card, idx) => {
-                            if (idx === frontIndex) {
-                                card.classList.add("stack-front");
-                                card.style.pointerEvents = "auto";
-                            } else {
-                                card.classList.remove("stack-front", "stack-hovered");
-                                card.style.pointerEvents = "none";
-                            }
-                        });
-                    }
-
-                    stackContainer.addEventListener("wheel", (e) => {
-                        const cards = Array.from(stackContainer.querySelectorAll(".card:not(.attached)"));
-                        if (cards.length <= 1) return;
-
-                        e.preventDefault();
-                        // Remove hover from old front card
-                        const oldFront = cards[currentIndex];
-                        if (oldFront) oldFront.classList.remove("stack-hovered");
-
-                        // Determine direction
-                        currentIndex = (e.deltaY > 0) ? currentIndex + 1 : currentIndex - 1;
-                        // Wrap around
-                        if (currentIndex < 0) currentIndex = cards.length - 1;
-                        if (currentIndex >= cards.length) currentIndex = 0;
-
-                        const maxOffset = cards.length - 1;
-
-                        cards.forEach((card, idx) => {
-                            // Calculate visual offset: 0 is the front card, increasing goes to the back
-                            const visualOffset = (idx - currentIndex + cards.length) % cards.length;
-
-                            // Bottom card (highest visualOffset) stays at 0,0
-                            // Front card (visualOffset 0) gets the most positive offset (bottom-right)
-                            card.style.zIndex = (cards.length - visualOffset) * 10;
-                            card.style.top = `${(maxOffset - visualOffset) * 4 * cardScale}px`;
-                            card.style.left = `${(maxOffset - visualOffset) * 2 * cardScale}px`;
-
-                        });
-
-                        // Update which card is interactive
-                        updateStackFront(stackContainer, currentIndex);
-
-                        // Apply hover effect to new front card since cursor is already over the stack
-                        const newFront = cards[currentIndex];
-                        if (newFront && stackContainer.matches(":hover")) {
-                            newFront.classList.add("stack-hovered");
-                        }
-                    }, { passive: false });
-
-                    // Add/remove hover class when mouse enters/leaves the stack
-                    // Use mouseover/mouseout to detect which specific card the cursor is on
-                    stackContainer.addEventListener("mouseover", (e) => {
-                        const hoveredCard = e.target.closest(".card");
-                        const cards = Array.from(stackContainer.querySelectorAll(".card:not(.attached)"));
-                        // If hovering over the cloak (attached card), remove hover from the front card
-                        if (hoveredCard && hoveredCard.classList.contains("attached")) {
-                            cards.forEach(c => c.classList.remove("stack-hovered"));
-                            return;
-                        }
-                        // Only add hover to the front card
-                        if (cards[currentIndex]) cards[currentIndex].classList.add("stack-hovered");
-                    });
-                    stackContainer.addEventListener("mouseleave", () => {
-                        const cards = Array.from(stackContainer.querySelectorAll(".card:not(.attached)"));
-                        cards.forEach(c => c.classList.remove("stack-hovered"));
-                    });
-
-            // Map specific transitions to this specific stack
-            let stackTransitions = [];
-            if (utmRules && config.state) {
-                stackTransitions = Object.entries(utmRules[config.state])
-                    .map(([readType, t]) => ({ ...t, read_type: readType }))
-                    .filter(t => !!t.tapped === !!config.tapped);
-            }
-
-            // If it's a fixed-count item (like Wild Evocation), count is config.count.
-            // Otherwise, it's the number of transitions we found.
-            const count = config.count ?? stackTransitions.length;
-
-            for (let i = 0; i < count; i++) {
-                const isBottom = (i === 0);
-                const trans = stackTransitions[i] || null;
-                const isPhasedOut = config.state && phasedOutList.includes(config.state);
-
-                const cardEl = tokenCard({
-                    pos: "Engine",
-                    tok: { creature_type: config.name, color: "white", tapped: false },
-                    isHead: false,
-                    blankSymbol: "Cephalid",
-                    gainsAttached: false,
-                    isAttachment: false,
-                    transition: trans
-                });
-
-                if (isPhasedOut) cardEl.classList.add("phased-out");
-
-                // Initial positioning: The first card (i=0) is the "front" of the stack
-                cardEl.style.position = "absolute";
-                cardEl.style.top = `${(count - 1 - i) * 4 * cardScale}px`;
-                cardEl.style.left = `${(count - 1 - i) * 2 * cardScale}px`;
-                cardEl.style.zIndex = (count - i) * 10;
-
-                stackContainer.appendChild(cardEl);
-
-                // Add Cloak of Invisibility ONLY to the bottom-most card in the stack
-                if (isBottom && (config.name.includes("Rotlung") || config.name.includes("Xathrid"))) {
-                    const cloakEl = tokenCard({
-                        pos: "Engine",
-                        tok: {creature_type: "Cloak of Invisibility", color: "blue", tapped: false},
-                        isHead: false,
-                        blankSymbol: "Cephalid",
-                        gainsAttached: false,
-                        isAttachment: true
-                    });
-
-                    cloakEl.style.zIndex = 0; // <--- This sets the attachment's zIndex
-                    cloakEl.style.pointerEvents = "auto";
-                    stackContainer.appendChild(cloakEl);
-                }
-            }
-            // Set initial front card (the first card, i=0, has the highest offset = front)
-            updateStackFront(stackContainer, 0);
-
-            bobPermanentsRow.appendChild(stackContainer);
-        });
-    }
-
-    const tape = snapshot.tape || {};
-    const head = snapshot.head ?? 0;
-    const blankSymbol = "Cephalid";
-    const radiusN = Number(radius.value);
-
-    const lo = head - radiusN;
-    const hi = head + radiusN;
-
-    const changedPositions = new Set((frame?.changed_positions || []).map((x) => Number(x)));
-    const writtenPos = (frame?.written_pos !== undefined && frame?.written_pos !== null) ? Number(frame.written_pos) : null;
-    const readPos = (frame?.read_pos !== undefined && frame?.read_pos !== null) ? Number(frame.read_pos) : null;
-
-// Determine global pulsing based on phase narration
-    let pulseTargetColor = null;
-    let pulseType = null; // "plus" or "minus"
-    const logs = frame?.narration || [];
-
-    if (logs.some(l => l.includes("Vigor"))) {
-        pulseType = "plus";
-        // Check the log text to see which color was protected/targeted
-        pulseTargetColor = logs.some(l => l.includes("white")) ? "white" : "green";
-    } else if (logs.some(l => l.includes("Global Effect") || l.includes("Infest resolves"))) {
-        pulseType = "minus";
-        pulseTargetColor = "all";
-    } else if (logs.some(l => l.includes("Dread of Night"))) {
-        pulseType = "minus";
-        pulseTargetColor = "black";
-    }
-
-    battlefieldRow.innerHTML = "";
-    for (let pos = lo; pos <= hi; pos++) {
-        // Calculate paper-invariant color: Green for left of head, White for head and right
-        const defaultColor = (pos < head) ? "green" : "white";
-        const tok = tape[String(pos)] || {creature_type: blankSymbol, color: defaultColor, tapped: false, token_id: 0};
-        const isHead = pos === head;
-        const gainsAttached = (snapshot.illusory_gains_attached_to != null) && (tok.token_id === snapshot.illusory_gains_attached_to);
-
-        const tapped = !!tok?.tapped;
-
-        const stackContainer = document.createElement("div");
-        stackContainer.className = "card-stack";
-        if (tapped) stackContainer.classList.add("tapped");
-
-        let flashClass = null;
-
-        // Add pulsing classes based on global turn events detected above
-        if (pulseType === "plus" && (pulseTargetColor === "all" || tok.color === pulseTargetColor)) {
-            flashClass = "pulse-plus";
-        } else if (pulseType === "minus" && (pulseTargetColor === "all" || tok.color === pulseTargetColor)) {
-            flashClass = "pulse-minus";
-        }
-
-        // Add the main token
-        const mainCard = tokenCard({pos, tok, isHead, blankSymbol, gainsAttached, flashClass});
-        stackContainer.appendChild(mainCard);
-
-        // Add Illusory Gains as a separate card if attached
-        if (gainsAttached) {
-            const gainsCard = tokenCard({
-                pos,
-                tok: {creature_type: "Illusory Gains", color: "blue"},
-                isHead,
-                blankSymbol,
-                gainsAttached: false,
-                isAttachment: true
-            });
-            gainsCard.classList.add("gains-attachment");
-
-            stackContainer.appendChild(gainsCard);
-        }
-
-        battlefieldRow.appendChild(stackContainer);
-    }
-
-// --- Alice Battlefield ---
+    // --- Alice Battlefield ---
     if (aliceBattlefieldRow) {
         aliceBattlefieldRow.innerHTML = "";
         // Look for battlefield data in the snapshot payload
         const aliceCards = snapshot.alice_battlefield || [];
+
+        // Determine pulse type from frame narration (needed for Soul Snuffers animation)
+        const logs = frame?.narration || [];
+        let pulseType = null;
+        let pulseTargetColor = null;
+
+        if (logs.some(l => l.includes("Vigor"))) {
+            pulseType = "plus";
+            pulseTargetColor = logs.some(l => l.includes("white")) ? "white" : "green";
+        } else if (logs.some(l => l.includes("Global Effect") || l.includes("Infest resolves"))) {
+            pulseType = "minus";
+            pulseTargetColor = "all";
+        } else if (logs.some(l => l.includes("Dread of Night"))) {
+            pulseType = "minus";
+            pulseTargetColor = "black";
+        }
 
         // Tracking for stacking duplicate cards
         const counts = {};
@@ -796,7 +871,7 @@ function render(snapshot, frame, graveyardData = [], stackData = []) {
                 const state = frame?.state_from || currentSnapshot?.state || "q1";
                 const readType = frame?.read_type;
                 if (utmRules && readType && utmRules[state] && utmRules[state][readType]) {
-                    stackTransition = { ...utmRules[state][readType], read_type: readType };
+                    stackTransition = {...utmRules[state][readType], read_type: readType};
                 }
             }
 
@@ -1047,6 +1122,61 @@ btnReset.addEventListener("click", () => {
     send({type: "reset"});
     logLines.innerHTML = "";
 });
+
+btnExport.addEventListener("click", () => {
+    if (!currentSnapshot) return;
+
+    // 1. Get and sort entries
+    const entries = Object.entries(currentSnapshot.tape || {})
+        .filter(([_, tok]) => tok && tok.token_id !== 0);
+
+    entries.sort(([posA], [posB]) => {
+        const isIntA = /^-?\d+$/.test(posA);
+        const isIntB = /^-?\d+$/.test(posB);
+        if (isIntA && isIntB) return parseInt(posA, 10) - parseInt(posB, 10);
+        if (isIntA !== isIntB) return isIntA ? -1 : 1;
+        return String(posA).localeCompare(String(posB), undefined, {numeric: true});
+    });
+
+    // 2. Manually construct the JSON string to preserve key order
+    const tapeLines = entries.map(([pos, tok]) => {
+        const tokenJson = JSON.stringify({
+            creature_type: tok.creature_type,
+            token_id: tok.token_id
+        }, null, 4).replace(/\n/g, '\n    ');
+        return `    "${pos}": ${tokenJson}`;
+    });
+
+    const exportObj = {
+        name: `Exported ${currentSnapshot.engine_name || 'machine'}`,
+        engine: currentSnapshot.engine_name || "rogozhin",
+        state: currentSnapshot.state,
+        head: currentSnapshot.head
+    };
+
+    let jsonString = "{\n";
+    jsonString += `  "name": ${JSON.stringify(exportObj.name)},\n`;
+    jsonString += `  "engine": ${JSON.stringify(exportObj.engine)},\n`;
+    jsonString += `  "state": ${JSON.stringify(exportObj.state)},\n`;
+    jsonString += `  "head": ${JSON.stringify(exportObj.head)},\n`;
+    jsonString += `  "tape": {\n${tapeLines.join(",\n")}\n  }`;
+
+    if (currentSnapshot.extra && currentSnapshot.extra.controllers) {
+        jsonString += ",\n" + `  "controllers": ${JSON.stringify(currentSnapshot.extra.controllers, null, 2).replace(/\n/g, '\n  ')}`;
+    }
+    jsonString += "\n}";
+
+    const blob = new Blob([jsonString], {type: "application/json"});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `tape_export_${Date.now()}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+});
+
 btnFrame.addEventListener("click", () => send({type: "step_frame"}));
 btnStep.addEventListener("click", () => send({type: "step_step"}));
 

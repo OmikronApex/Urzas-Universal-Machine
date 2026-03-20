@@ -34,6 +34,16 @@ class Rogozhin218Machine(BaseMTGMachine):
                 "Steely Resolve", "Mesmeric Orb", "Ancient Tomb",
                 "Prismatic Omen", "Choke", "Vigor", "Blazing Archon",
             ]
+        if not self.bob_battlefield:
+            self.bob_battlefield = [
+                "Rotlung Reanimator", "Rotlung Reanimator", 
+                "Xathrid Necromancer", "Xathrid Necromancer",
+                "Wild Evocation", "Recycle", "Privileged Position", 
+                "Vigor", "Blazing Archon"
+            ]
+        # Initialize engine rows (Bob's side) - these are handled by the renderer in frontend
+        # but we define the available players here.
+        self.players = ["Alice", "Bob"]
 
     def get_token(self, pos: Union[int, str]) -> TokenPermanent:
         """
@@ -45,13 +55,19 @@ class Rogozhin218Machine(BaseMTGMachine):
         except (ValueError, TypeError):
             p = 0
 
+        # Ensure comparison is safe if head is a string (e.g. from Gadget scenario)
+        try:
+            head_val = int(self.head)
+        except (ValueError, TypeError):
+            head_val = 0
+
         if p in self.tape:
             tok = self.tape[p]
         else:
             # Decide color for implicit Cephalids
-            if p < self.head:
+            if p < head_val:
                 color = "green"
-            elif p > self.head:
+            elif p > head_val:
                 color = "white"
             else:
                 # Head position color matches the last direction moved
@@ -60,7 +76,7 @@ class Rogozhin218Machine(BaseMTGMachine):
             tok = TokenPermanent(token_id=0, creature_type=BLANK, color=color, tapped=False)
 
         # Determine base P/T: 2/2 + distance from head
-        dist = abs(self.head - p)
+        dist = abs(head_val - p)
         base = 2 + dist
 
         adj = self.green_pt_adj if tok.color == "green" else self.white_pt_adj

@@ -55,55 +55,109 @@ def load_scenario(file_path: str) -> BaseMTGMachine:
 
     engine_type = data.get("engine", "rogozhin")
 
-    if engine_type == "gadget_2024":
+    if engine_type == "gadget":
         from GadgetMachine import ModularGadgetMachine
         machine = ModularGadgetMachine()
     else:
         from RogozhinMachine import Rogozhin218Machine
         machine = Rogozhin218Machine()
 
-    machine.state = data.get("state", "q1")
-    machine.head = data.get("head", 0)
-
-    # Load deck/hand if specified
+    # Reset fields to ensure we don't have artifacts from previous scenarios
+    # but ONLY if the data is explicitly provided in the JSON. 
+    # Otherwise, we keep the engine's default setup from __post_init__.
     if "cards_on_hand" in data:
-        machine.cards_on_hand = data["cards_on_hand"]
+        machine.cards_on_hand = list(data["cards_on_hand"])
     if "deck" in data:
-        machine.deck = data["deck"]
+        machine.deck = list(data["deck"])
+    if "alice_battlefield" in data:
+        machine.alice_battlefield = list(data["alice_battlefield"])
+    else:
+        # If not in scenario, ensure we use engine defaults
+        # (already set by constructor, so we don't overwrite with [])
+        pass
+        
+    if "bob_battlefield" in data:
+        machine.bob_battlefield = list(data["bob_battlefield"])
+
+    machine.state = data.get("state", "q1")
+    
+    # Ensure head is correct type for the engine
+    head_raw = data.get("head", 0)
+    if engine_type == "rogozhin":
+        try:
+            machine.head = int(head_raw)
+        except (ValueError, TypeError):
+            machine.head = 0
+    else:
+        machine.head = head_raw
 
     # Load tape
     tape_raw = data.get("tape", {})
     if not isinstance(tape_raw, dict):
         raise ValueError("'tape' must be a JSON object mapping position -> creature type")
 
-    for pos_str, creature_type in tape_raw.items():
+    for pos_str, creature_type_data in tape_raw.items():
+        # Support both integer tape positions and string gadget IDs
         try:
             pos = int(pos_str)
         except (TypeError, ValueError):
-            raise ValueError(f"Tape position must be an integer, got {pos_str!r}")
+            pos = pos_str
 
-        if not isinstance(creature_type, str):
-            raise ValueError(
-                f"Tape value at position {pos} must be a creature type string, "
-                f"got {type(creature_type).__name__}"
-            )
+        # Handle both simple string types and complex token objects
+        if isinstance(creature_type_data, str):
+            creature_type = creature_type_data
+            token_id = None
+        else:
+            creature_type = creature_type_data.get("creature_type", BLANK)
+            token_id = creature_type_data.get("token_id")
 
-        color = "green" if pos < machine.head else "white"
+        # Determine default color safely
+        color = "white"
+        if isinstance(pos, int) and isinstance(machine.head, int):
+            if pos < machine.head:
+                color = "green"
+
         token = machine._new_token(creature_type=creature_type, color=color)
+        
+        # If the scenario provides a specific token_id, override the auto-generated one
+        if token_id is not None:
+            token = TokenPermanent(
+                token_id=token_id,
+                creature_type=token.creature_type,
+                color=token.color,
+                tapped=token.tapped,
+                plus1_counters=token.plus1_counters,
+                minus1_counters=token.minus1_counters,
+                power=token.power,
+                toughness=token.toughness
+            )
+            # Ensure the auto-incrementer stays ahead of manually set IDs
+            machine._next_token_id = max(machine._next_token_id, token_id + 1)
+
         machine.set_token(pos, token)
 
-    # Initialize Illusory Gains at head - 1
-    initial_gains_pos = machine.head - 1
-    target_token = machine.get_token(initial_gains_pos)
+    # Initialize controllers if provided (Modular 2024 construction)
+    if "controllers" in data and hasattr(machine, "controllers"):
+        # JSON keys are strings, convert to int for token_id mapping
+        machine.controllers = {int(k): v for k, v in data["controllers"].items()}
+    elif hasattr(machine, "controllers"):
+        # Default all existing tokens to Alice
+        machine.controllers = {t.token_id: "Alice" for t in machine.tape.values()}
 
-    # If head-1 is empty, we must create a token for it to attach to
-    if target_token.token_id == 0:
-        color = "green" if initial_gains_pos < machine.head else "white"
-        explicit_blank = machine._new_token(creature_type=BLANK, color=color)
-        machine.set_token(initial_gains_pos, explicit_blank)
-        machine.illusory_gains_attached_to = explicit_blank.token_id
-    else:
-        machine.illusory_gains_attached_to = target_token.token_id
+    # Initialize Illusory Gains at head - 1 (Rogozhin only)
+    if engine_type == "rogozhin":
+        # Initialize Illusory Gains at head - 1
+        initial_gains_pos = machine.head - 1
+        target_token = machine.get_token(initial_gains_pos)
+
+        # If head-1 is empty, we must create a token for it to attach to
+        if target_token.token_id == 0:
+            color = "green" if initial_gains_pos < machine.head else "white"
+            explicit_blank = machine._new_token(creature_type=BLANK, color=color)
+            machine.set_token(initial_gains_pos, explicit_blank)
+            machine.illusory_gains_attached_to = explicit_blank.token_id
+        else:
+            machine.illusory_gains_attached_to = target_token.token_id
 
     return machine
 

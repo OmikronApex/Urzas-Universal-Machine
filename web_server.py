@@ -60,35 +60,24 @@ def _frame_to_jsonable(frame: Any) -> dict:
 
 
 def _snapshot_machine(machine: BaseMTGMachine) -> dict:
-    """Zero-logic snapshotting. The machine defines its own state representation."""
-    if machine is None: return {}
-
-    # Common fields
-    data = {
-        "engine": machine.engine_name,
-        "step_index": machine.step_index,
-        "state": machine.state,
+    visible_tape = machine.get_visible_tape()
+    
+    return {
+        "engine_name": machine.engine_name,
+        "tape": {str(k): asdict(v) for k, v in visible_tape.items()},
         "head": machine.head,
+        "state": machine.state,
+        "step_index": machine.step_index,
         "halted": machine.halted,
         "winner": machine.winner,
+        "illusory_gains_attached_to": machine.illusory_gains_attached_to,
         "cards_on_hand": list(machine.cards_on_hand),
-        "alice_battlefield": list(machine.alice_battlefield),
         "deck": list(machine.deck),
+        "alice_battlefield": list(machine.alice_battlefield),
+        "bob_battlefield": list(machine.bob_battlefield),  # ADD THIS LINE
         "phased_out": machine.get_phased_out_labels(),
+        "extra": machine.get_extra_snapshot_data(),
     }
-
-    # Use the machine's specific tape/controller logic
-    tape_out = {}
-    # Constructions define what part of the 'tape' is relevant to the UI
-    for pos, token in machine.get_visible_tape().items():
-        tape_out[str(pos)] = asdict(token)
-    
-    data["tape"] = tape_out
-    
-    # Optional engine-specific fields (like controllers)
-    data.update(machine.get_extra_snapshot_data())
-    
-    return data
 
 
 def _get_full_utm_dict() -> dict:
