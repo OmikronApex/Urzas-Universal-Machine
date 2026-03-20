@@ -116,6 +116,7 @@ function updateHud(snapshot) {
 function tokenCard({
                        pos,
                        tok,
+                       controller, // Added for 2024 construction
                        isHead,
                        blankSymbol,
                        gainsAttached,
@@ -125,6 +126,19 @@ function tokenCard({
                    }) {
     const el = document.createElement("div");
     el.className = "card";
+
+    // Visual indicators for control
+    if (controller === "Alice") el.classList.add("controlled-alice");
+    if (controller === "Bob") el.classList.add("controlled-bob");
+    if (controller === "Charlie") el.classList.add("controlled-charlie");
+
+    // Add a controller badge to the card UI
+    if (controller) {
+        const badge = document.createElement("div");
+        badge.className = "control-badge";
+        badge.textContent = controller[0]; // 'A', 'B', etc.
+        el.appendChild(badge);
+    }
     if (isAttachment) el.classList.add("attached");
 
     const creatureType = tok?.creature_type ?? (isAttachment ? "Illusory Gains" : blankSymbol);
@@ -332,7 +346,7 @@ function tokenCard({
         textBox.innerHTML = "You control enchanted creature.<br><br>Whenever a creature enters the battlefield under an opponent's control, attach Illusory Gains to that creature.";
     } else if (nameLower.includes("rotlung reanimator") || nameLower.includes("xathrid necromancer")) {
         const isRotlung = nameLower.includes("rotlung");
-            
+
         // Priority 1: Specific transition passed in (for engine row)
         // Priority 2: Current frame's transition (for stack/battlefield triggers)
         let rule = transition;
@@ -349,7 +363,7 @@ function tokenCard({
             const writeType = rule.write_type;
             const color = rule.move_color;
             const tapped = rule.tapped ? " tapped" : "";
-                
+
             textBox.innerHTML = `Whenever ${isRotlung ? "Rotlung Reanimator" : "Xathrid Necromancer"} or another ${readType} dies, create a${tapped} ${color} ${writeType} creature token.`;
         } else {
             const triggerType = isRotlung ? "Zombie" : "Human";
@@ -503,7 +517,7 @@ function render(snapshot, frame, graveyardData = [], stackData = []) {
             const stackContainer = document.createElement("div");
             stackContainer.className = "card-stack";
                 stackContainer.style.marginRight = "-20px";
-                
+
                     // Mouse wheel churn logic
                     let currentIndex = 0;
 
@@ -524,7 +538,7 @@ function render(snapshot, frame, graveyardData = [], stackData = []) {
                     stackContainer.addEventListener("wheel", (e) => {
                         const cards = Array.from(stackContainer.querySelectorAll(".card:not(.attached)"));
                         if (cards.length <= 1) return;
-                    
+
                         e.preventDefault();
                         // Remove hover from old front card
                         const oldFront = cards[currentIndex];
@@ -541,13 +555,13 @@ function render(snapshot, frame, graveyardData = [], stackData = []) {
                         cards.forEach((card, idx) => {
                             // Calculate visual offset: 0 is the front card, increasing goes to the back
                             const visualOffset = (idx - currentIndex + cards.length) % cards.length;
-                        
+
                             // Bottom card (highest visualOffset) stays at 0,0
                             // Front card (visualOffset 0) gets the most positive offset (bottom-right)
                             card.style.zIndex = (cards.length - visualOffset) * 10;
                             card.style.top = `${(maxOffset - visualOffset) * 4 * cardScale}px`;
                             card.style.left = `${(maxOffset - visualOffset) * 2 * cardScale}px`;
-                            
+
                         });
 
                         // Update which card is interactive

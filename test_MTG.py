@@ -11,11 +11,11 @@ import tempfile
 import os
 
 import UniversalTuringMachineTransitions as utm
-from MTGSimulator import GameLikeMachine, NoTransitionError
+from MTGSimulator import Rogozhin218Machine, NoTransitionError
 from MTGSimulator import load_scenario, save_scenario
 
 
-def run_one_step_frames(m: GameLikeMachine):
+def run_one_step_frames(m: Rogozhin218Machine):
     frames = []
     for f in m.frames_for_next_step():
         frames.append(f)
@@ -37,7 +37,7 @@ class TestAllTransitionsTableDriven(unittest.TestCase):
     def test_state_change_logic_via_tapped_tokens(self):
         """Verify that 'tapped' write_type results in a state change after Soul Snuffers."""
         # Use a transition known to change state: q1 + Kavu -> q2 (tapped Leviathan)
-        m = GameLikeMachine()
+        m = Rogozhin218Machine()
         m.state = "q1"
         m.head = 0
         m.set_token(0, m._new_token(creature_type="Kavu"))
@@ -61,7 +61,7 @@ class TestAllTransitionsTableDriven(unittest.TestCase):
 
     def test_frame_diff_payload_is_populated_for_read_write_and_move(self):
         # Non-halt example: q1 reading Cephalid
-        m = GameLikeMachine()
+        m = Rogozhin218Machine()
         m.state = "q1"
         m.head = 0
         m.set_token(0, m._new_token(creature_type="Cephalid"))
@@ -96,7 +96,7 @@ class TestAllTransitionsTableDriven(unittest.TestCase):
 
     def test_frame_diff_payload_is_populated_for_halt(self):
         # Halt example: q1 reading Rhino writes Assassin with blue move_color -> HALT.
-        m = GameLikeMachine()
+        m = Rogozhin218Machine()
         m.state = "q1"
         m.head = 0
         m.set_token(0, m._new_token(creature_type="Rhino"))
@@ -121,7 +121,7 @@ class TestAllTransitionsTableDriven(unittest.TestCase):
     def test_every_utm_transition_matches_one_step_semantics(self):
         for (state, read_type), trans in utm.UTM.items():
             with self.subTest(state=state, read_type=read_type):
-                m = GameLikeMachine()
+                m = Rogozhin218Machine()
                 m.state = state
                 m.head = 0
                 m.set_token(0, m._new_token(creature_type=read_type))
@@ -175,7 +175,7 @@ class TestAllTransitionsTableDriven(unittest.TestCase):
     def test_blank_cell_uses_blank_symbol_transition(self):
         for state in ("q1", "q2"):
             with self.subTest(state=state):
-                m = GameLikeMachine()
+                m = Rogozhin218Machine()
                 m.state = state
                 m.head = 0
                 # Do not set a token at 0 -> implicit blank
@@ -188,7 +188,7 @@ class TestAllTransitionsTableDriven(unittest.TestCase):
 
     def test_tape_expansion_and_color_logic(self):
         """Verify tokens created far from head have correct default colors (White/Green)."""
-        m = GameLikeMachine()
+        m = Rogozhin218Machine()
         m.head = 10
         
         # Token at 5 should be Green (left of head)
@@ -205,7 +205,7 @@ class TestAllTransitionsTableDriven(unittest.TestCase):
 
     def test_no_transition_raises_error(self):
         """Verify that reading an invalid symbol (like Assassin) raises NoTransitionError."""
-        m = GameLikeMachine()
+        m = Rogozhin218Machine()
         m.state = "q1"
         m.head = 0
         # Assassin is a halt symbol, not a valid READ symbol in the UTM table
@@ -214,7 +214,7 @@ class TestAllTransitionsTableDriven(unittest.TestCase):
         with self.assertRaises(NoTransitionError):
             list(m.frames_for_next_step())
 
-def run_n_steps(m: GameLikeMachine, n: int):
+def run_n_steps(m: Rogozhin218Machine, n: int):
     """Run n full computational steps (consuming all frames per step)."""
     for _ in range(n):
         if m.halted:
@@ -324,7 +324,7 @@ class TestScenarioLoader(unittest.TestCase):
             os.unlink(path)
 
     def test_save_and_reload_preserves_state(self):
-        m = GameLikeMachine()
+        m = Rogozhin218Machine()
         m.state = "q2"
         m.head = 5
         m.set_token(5, m._new_token(creature_type="Elf"))
@@ -356,7 +356,7 @@ class TestScenarioLoader(unittest.TestCase):
 class TestScenarioExecution(unittest.TestCase):
     def test_engine_consistency_during_step(self):
         """Verify Alice's battlefield and deck rotation remains stable."""
-        m = GameLikeMachine()
+        m = Rogozhin218Machine()
         initial_deck_size = len(m.deck)
         initial_hand_size = len(m.cards_on_hand)
         
