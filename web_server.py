@@ -19,7 +19,9 @@ from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
-from MTGSimulator import GameLikeMachine, load_scenario
+from MTGSimulator import Rogozhin218Machine, load_scenario, BaseMTGMachine
+from GadgetMachine import ModularGadgetMachine
+from RogozhinMachine import Rogozhin218Machine
 from UniversalTuringMachineTransitions import UTM
 
 # Server configuration
@@ -57,56 +59,24 @@ def _frame_to_jsonable(frame: Any) -> dict:
     return data
 
 
-def _snapshot_machine(machine: GameLikeMachine) -> dict:
-    """Create a JSON-serializable snapshot of the machine state."""
-    if machine is None:
-        return {
-            "step_index": 0,
-            "state": "q1",
-            "head": 0,
-            "halted": False,
-            "winner": None,
-            "illusory_gains_attached_to": None,
-            "cards_on_hand": [],
-            "alice_battlefield": [],
-            "tape": {},
-            "phased_out": [],
-        }
-
-    # Phasing logic: After Bob's turn, engine for CURRENT state is phased out
-    phased_out = ["q1"] if machine.state == "q1" else ["q2"]
-
-    # Convert tape to JSON
-    tape_out: Dict[str, dict] = {}
+def _snapshot_machine(machine: BaseMTGMachine) -> dict:
+    visible_tape = machine.get_visible_tape()
     
-    # Define the visible range to ensure Cephalids are included
-    # We'll take a generous radius around the head
-    view_radius = 15 
-    for pos in range(machine.head - view_radius, machine.head + view_radius + 1):
-        token = machine.get_token(pos)
-        tape_out[str(pos)] = {
-            "token_id": int(getattr(token, "token_id", 0)),
-            "creature_type": getattr(token, "creature_type", "Cephalid"),
-            "color": getattr(token, "color", None),
-            "tapped": bool(getattr(token, "tapped", False)),
-            "plus1_counters": int(getattr(token, "plus1_counters", 0)),
-            "minus1_counters": int(getattr(token, "minus1_counters", 0)),
-            "power": int(getattr(token, "power", 2)),
-            "toughness": int(getattr(token, "toughness", 2)),
-        }
-
     return {
-        "step_index": int(machine.step_index),
+        "engine_name": machine.engine_name,
+        "tape": {str(k): asdict(v) for k, v in visible_tape.items()},
+        "head": machine.head,
         "state": machine.state,
-        "head": int(machine.head),
-        "halted": bool(machine.halted),
+        "step_index": machine.step_index,
+        "halted": machine.halted,
         "winner": machine.winner,
         "illusory_gains_attached_to": machine.illusory_gains_attached_to,
         "cards_on_hand": list(machine.cards_on_hand),
-        "alice_battlefield": list(machine.alice_battlefield),
-        "tape": tape_out,
-        "phased_out": phased_out,
         "deck": list(machine.deck),
+        "alice_battlefield": list(machine.alice_battlefield),
+        "bob_battlefield": list(machine.bob_battlefield),  # ADD THIS LINE
+        "phased_out": machine.get_phased_out_labels(),
+        "extra": machine.get_extra_snapshot_data(),
     }
 
 
@@ -128,12 +98,12 @@ class _Session:
 
     def __init__(self) -> None:
         self.scenario_name: str = "empty_tape.json"
-        self.machine: GameLikeMachine = self._load(self.scenario_name)
+        self.machine: BaseMTGMachine = self._load(self.scenario_name)
         self.frame_iter: Optional[Iterator[Any]] = None
         self.graveyard_cards: List[dict] = []
         self.current_stack: List[str] = []
 
-    def _load(self, scenario_name: str) -> GameLikeMachine:
+    def _load(self, scenario_name: str) -> BaseMTGMachine:
         """Load a scenario by name."""
         path = os.path.join(SCENARIOS_DIR, scenario_name)
         return load_scenario(path)
